@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?page id="als_portal_login" ?>
+<?page title="MEL+RW PORTAL"?>
+<?link rel="shortcut icon" type="image/x-icon" href="/favicon.ico"?>
+<zk xmlns:h="http://www.w3.org/1999/xhtml" xmlns:zk="http://www.zkoss.org/2005/zk">
+<zscript src="rwglobal/rwglobaldefs.zs" />
+<zscript>
+<![CDATA[
+MYTITLE = "MEL+RW Portal";
+MYVERSION = "v0.04";
+/*
+<zscript src="alsglobal/securityfuncs.zs" />
+File: main login page for rentwise system and other portals
+Written by: Victor Wong
+Dated: 18/06/2013
+
+18/06/2013: start building for rentwise - knockoff from main source-codes
+13/01/2015: knockoff from main for MEL project
+*/
+
+import org.victor.*;
+
+Generals kiboo = new Generals(); SqlFuncs sqlhand = new SqlFuncs(); GuiFuncs guihand = new GuiFuncs();
+
+itest_userAccessObj useraccessobj = new itest_userAccessObj();
+sechand = new WebuserSecurity(useraccessobj);
+
+/*
+kio = Executions.getCurrent();
+remoadd = kio.getRemoteAddr().substring(0,6);
+if(remoadd.indexOf("172.18") != -1) Executions.sendRedirect("http://172.18.107.15:8080/elb/");
+*/
+// not victor's IP, redirect to production-server
+/*
+kio = Executions.getCurrent();
+remoadd = kio.getRemoteAddr();
+if(remoadd.indexOf("198") == -1) Executions.sendRedirect("http://172.18.107.7:18080/als/");
+*/
+
+void loginToSystem(Component iwhat)
+{
+	itype = iwhat.getId();
+	tmp_username = kiboo.replaceSingleQuotes(tb_username.getValue().trim());
+	tmp_password = kiboo.replaceSingleQuotes(tb_password.getValue().trim());
+	todaydate = kiboo.getDateFromDatebox(hiddendatebox);
+
+	if(tmp_username.equals("") || tmp_password.equals("")) return;
+
+	enc_pwd = sechand.als_MD5_Encrypter(tmp_password);
+
+	if(!sechand.itest_checkUserAccess(tmp_username,enc_pwd,tmp_password,useraccessobj))
+	{
+		// 3/11/2010: log invalid login
+		sqlhand.addAuditTrail("LOGIN","Unsuccessful-try login to the system (" + tmp_username + ")", useraccessobj.username, todaydate);
+		guihand.showMessageBox("Invalid login..");
+		return;
+	}
+
+	if(itype.equals("tablogin")) { guihand.showMessageBox("Working on it.. hang on"); return; }
+
+	//sqlhand.addAuditTrail("LOGIN","Successfully login to the system", useraccessobj.username, todaydate);
+	loginwin.setVisible(false); // hide login window before loading mainprogram
+	sechand.itest_setUserAccessObj(mainprogram, useraccessobj);
+	
+	if(itype.equals("loginbutt")) mainprogram.setSrc("portalplay.zul");
+
+	tb_username.setValue(""); // reset user access object, we only hide the login window,
+	tb_password.setValue(""); // when it's visible again, everything should be cleared.
+} // end of loginToSystem()
+
+/*
+Codes written by Victor Wong
+*/
+
+]]>
+</zscript>
+
+<style>
+	body
+	{
+	padding: 0 0;
+	background-color:#4C5C86;
+	background: url('rwimg/city-scape-blue-hi.jpg') no-repeat center center fixed ;
+	-webkit-background-size: cover;
+	-moz-background-size: cover;
+	-o-background-size: cover;
+	background-size: cover;
+	}
+
+body:before {
+content: ""; position: fixed; top: -10px; left: 0; width: 100%; height: 10px;
+-webkit-box-shadow: 0px 0px 10px rgba(0,0,0,.8);
+-moz-box-shadow: 0px 0px 10px rgba(0,0,0,.8);
+ box-shadow: 0px 0px 10px rgba(0,0,0,.8);
+z-index: 100;
+}
+
+.GridLayoutNoBorder tr.z-row td.z-row-inner, tr.z-row .z-cell, div.z-grid
+{
+border: none; overflow: hidden; zoom: 1;
+border-top: none; border-left: none; border-right: none; border-bottom: none;
+}
+
+</style>
+<!--
+background: url('rwimg/RW1.jpg') no-repeat center center fixed;
+position="center,center"
+background-image: url('alsimg/wallpaper_s3_bv.jpg');
+left="20px" top="20px" 
+-->
+
+<window id="loginwin" position="center" mode="overlapped" style="opacity:0.6;filter: alpha(opacity=60);">
+<caption image="/rwimg/favicon.png" label="${MYTITLE}"/>
+<vbox>
+	<datebox id="hiddendatebox" format="yyyy-MM-dd" visible="false" onCreate="self.value = new Date()" />
+
+	<grid sclass="GridLayoutNoBorder">
+		<rows>
+			<row>
+				<label value="Username" />
+			</row>
+			<row>
+				<textbox id="tb_username" width="120px" />
+			</row>
+			<row>
+				<label value="Password" />
+			</row>
+			<row>
+				<textbox id="tb_password" type="password" width="120px" onOk="loginToSystem()" />	
+			</row>
+			<row>
+					<button id="loginbutt" label="Login" onClick="loginToSystem(self)" />
+			</row>
+		</rows>
+	</grid>
+
+	<div>
+		<h:center>
+			<label multiline="true" style="font-size:9px" >
+			&#169;2015 Rentwise Sdn Bhd -vW
+			</label>
+		</h:center>
+	</div>
+
+<zscript>
+<![CDATA[
+
+class pwd_tb_Listener implements org.zkoss.zk.ui.event.EventListener // onOK for tb_password
+{
+	public void onEvent(Event event) throws UiException
+	{
+		loginToSystem(loginbutt);
+	}
+}
+tb_password.addEventListener("onOK",new pwd_tb_Listener());
+
+]]>
+</zscript>
+
+</vbox>
+</window>
+<div>
+<include id="mainprogram" />
+</div>
+</zk>

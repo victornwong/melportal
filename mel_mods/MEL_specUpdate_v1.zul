@@ -1,0 +1,626 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?page id="melspecuipdyt"?>
+<zk>
+<zscript src="../rwglobal/rwglobaldefs.zs" />
+<zscript src="../rwglobal/rwsqlfuncs.zs" />
+<zscript src="../rwglobal/formMaker_v1.zs" />
+<zscript src="../rwglobal/systemAudit.zs" />
+<zscript src="../rwglobal/uploadDocu_v1.zs" />
+<zscript src="../rwglobal/fc6_CustomerSelector.zs" />
+<zscript src="../rwglobal/jobNotes_funcs.zs" />
+<zscript src="../rwglobal/uploadedWorksheet_v1.zs" />
+<zscript src="../rwglobal/emailfuncs.zs" />
+<zscript src="../rws_warehouse/goodsreceive/injtest.zs" />
+<zscript src="./MEL_specUpdate_funcs.zs" />
+<zscript src="./MEL_specUpdate_MPF.zs" />
+<zscript src="./MEL_specUpdate_FC6.zs" />
+<zscript>
+<![CDATA[
+MYTITLE = "MEL - Audit / Specs Update";
+MYVERSION = "v0.2.2";
+MYPANEL = "melitmspecupdpanl";
+/*
+@Title Inventory items spec update - like in FOCUS (for MEL project)
+@Author Victor Wong
+@Since 08/01/2015
+@Notes
+Knockoff from RWMS
+06/02/2015: added operability, completeness and appearance to 5 drop-downs,
+*/
+import java.util.*;
+import java.text.*;
+import java.io.*;
+import java.lang.Float;
+import groovy.sql.Sql;
+import org.zkoss.zk.ui.*;
+import org.zkoss.zk.zutl.*;
+import java.math.BigDecimal;
+import java.awt.Color;
+import org.zkoss.util.media.AMedia;
+import org.zkoss.zul.*;
+import org.apache.poi.xssf.usermodel.*;
+import org.apache.poi.ss.util.*;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.hssf.usermodel.*;
+import org.victor.*;
+sechand = new WebuserSecurity();
+myincludeid = Executions.getCurrent().getParameter("myid");
+itest_userAccessObj useraccessobj = sechand.itest_getUserAccessObject();
+if(useraccessobj == null) Executions.sendRedirect(MAINLOGIN_PAGE);
+
+kiboo = new Generals(); sqlhand = new SqlFuncs(); lbhand = new ListboxHandler();
+guihand = new GuiFuncs(); luhand = new LookupFuncs(); dmshand = new DMSFuncs();
+gridhand = new GridHandler(); ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
+
+String[] scanitems_colws = {
+"60px","200px", "200px" , "90px","90px","80px","50px",
+"50px","50px","50px","50px","50px",
+"50px","50px","50px","50px","50px",
+"50px","50px","","60px","60px",
+"60px","60px",
+
+"60px","60px","",
+"","","","",
+
+"","","","","",
+"","","","","",
+
+"","","",
+"60px","","","","",
+"","","","","60px",
+/*
+"", // equip cost drop-downs
+"", // diminishing drop-downs
+"",
+"",
+"",
+"",
+*/
+};
+
+String[] scanitems_collb = {
+"", "MEL item", "RW Stockname", "Asset tag", "Serial","Grd", "Brand", // 5
+"Type", "Model", "Processor", "M.Size", "M.Type", // 10
+"Color", "Case", "COA", "COA2", "RAM", // 15
+"HDD", "CDROM1", "Comment", "Webcam", "B.Tooth", // 20
+"F.Print", "C.Reader",
+
+"Barcode", "Notes", "Operability1", // 25
+"Operability2", "Operability3", "Operability4", "Operability5",
+
+"Appearance1", "Appearance2", "Appearance3", "Appearance4", "Appearance5", 
+"Completeness1", "Completeness2", "Completeness3", "Completeness4", "Completeness5",
+
+"Grade", "Form factor", "Case color", // 30
+"Laptop screen size", "HDD size", "RAM size", "RAM sticks", "DIMM slot", // 35
+"OS", "Media drives", "HDD wiped", "HDD destroyed", "HDD serial", // 40
+/*
+"MELEQUIP", // equip cost drop-downs 23
+"DIMINISH1", // diminishing drop-downs
+"DIMINISH2",
+"DIMINISH3",
+"DIMINISH4",
+"DIMINISH5",
+*/
+ };
+
+String[] specs_field_type = {
+"ck","hb","hb","hb","hb","lb", // 5
+"tb",
+
+"tb","tb","tb","lb","tb", // 11
+"lb","lb","tb","tb","tb", // 16
+"tb","lb","tb","lb","lb", // 21
+"lb","lb", // 23
+
+"tb","tb","lb", // 26
+"lb","lb","lb","lb",
+
+"lb","lb","lb","lb","lb",
+"lb","lb","lb","lb","lb",
+
+"lb","lb","lb", // 31
+"lb","lb","lb","lb","lb", // 36
+"lb","lb","lb","lb","tb", // 41
+
+/*
+"lb", // equip cost drop-downs
+"lb","lb","lb","lb","lb",
+*/
+};
+
+String[] specs_fields = {
+"grade","Brand", "Item", "Model", "Processor", "MonitorSize", "MonitorType",
+"colour", "casing", "COA", "COA2", "RAM", "HDD", "Cdrom1", "Comment",
+//"WebcamYH", "BluetoothYH", "FingerPrintYH", "CardReaderYH",
+/*
+"equipcost",
+"dim1","dim2","dim3","dim4","dim5"
+*/
+};
+
+String[] specs_sql_fields = {
+"GradeYH","BrandYH","ItemTypeYH","ModelYH","ProcessorYH","MonitorSizeYH","MonitorTypeYH",
+"ColourYH","CasingYH","COA1YH","COA2YH","RAMSizeYH","HDDSizeYH","CD1YH","CommentsYH",
+//"WebcamYH", "BluetoothYH", "FingerPrintYH", "CardReaderYH",
+/*
+"equipcost",
+"dim1","dim2","dim3","dim4","dim5"
+*/
+};
+
+String[] specs_mpf_names = {
+"m_grd", "m_brand", "m_type", "m_model", "m_processor", "m_msize", "m_mtype",
+"m_color", "m_case", "m_coa", "m_coa2", "m_ram", "m_hdd", "m_cdrom1", "m_comment",
+"m_webcam", "m_btooth", "m_fprint", "m_creader",
+
+"ml_barcode", "ml_notes", "ml_operability",
+"ml_operability2", "ml_operability3", "ml_operability4", "ml_operability5",
+
+"ml_appearance", "ml_appearance2", "ml_appearance3", "ml_appearance4", "ml_appearance5",
+"ml_completeness", "ml_completeness2", "ml_completeness3", "ml_completeness4", "ml_completeness5",
+
+"ml_grade", "ml_formfactor", "ml_casecolor",
+"ml_laptopscreensize", "ml_hddsize", "ml_ramsize", "ml_ramsticks", "ml_dimmslot",
+"ml_os", "ml_mediadrives", "ml_hddwiped", "ml_hdddestroyed", "ml_hdddestsnum",
+};
+
+String[] MEL_invt_fields = {
+"rw_grade",
+"brand_make",
+"item_type",
+"model",
+"sub_type",
+"sub_spec",
+"rw_monitortype",
+"rw_color",
+"rw_casing",
+"rw_COA",
+"rw_COA2",
+"ram",
+"hdd",
+"rw_cdrom1",
+"rw_comment",
+"rw_webcamyh",
+"rw_bluetoothyh",
+"rw_fingerprintyh",
+"rw_cardreaderyh",
+
+"m_barcode",
+"m_notes",
+"m_operability",
+"m_operability2",
+"m_operability3",
+"m_operability4",
+"m_operability5",
+"m_appearance",
+"m_appearance2",
+"m_appearance3",
+"m_appearance4",
+"m_appearance5",
+"m_completeness",
+"m_completeness2",
+"m_completeness3",
+"m_completeness4",
+"m_completeness5",
+"m_grade",
+"m_formfactor",
+"m_casecolor",
+"m_laptopscreensize",
+"m_hddsize",
+"m_ramsize",
+"m_ramsticks",
+"m_dimmslot",
+"m_os",
+"m_mediadrives",
+"m_hddwiped",
+"m_hdddestroyed",
+"m_hdddestsnum",
+
+/*
+"melequip",
+"diminish1",
+"diminish2",
+"diminish3",
+"diminish4",
+"diminish5",
+*/
+};
+
+PARSE_SNUM_POS = 0; // posi to MELGRN_funcs.csgnasshd
+PARSE_ASSETTAG_POS = 1;
+PARSE_CSGN_NO_POS = 2;
+PARSE_ITEMDESC_POS = 5;
+PARSE_DATERECEIVED_POS = 14;
+
+MELGRN_PREFIX = "MELGRN";
+
+last_showgrn_type = 0;
+user_location = "KUALA_LUMPUR"; // grab from user-rec(portal or local)
+
+glob_sel_grn = glob_sel_stat = glob_sel_parentcsgn = glob_sel_batchno = glob_sel_unknown = "";
+glob_sel_auditstat = glob_sel_auditdate = "";
+user_location = ""; // grab from user-rec(portal or local), processing at EOF
+
+showgrn_extra_sql = " and mg.gstatus='COMMIT'"; // use in show_MELGRN() to filter committed grn only
+grn_show_meta = false; // used in goodsrecv_funcs.grnclicker to show grn-metadata or not
+glob_focus6_grades = null;
+
+checkitems_doubleclicker = null;
+
+void grn_Selected_Callback() // call-back in goodsrecv_funcs.grnclicker
+{
+	//showGRN_things(glob_sel_grn);
+	//toggButts_specupdate( (glob_sel_auditstat.equals("POST")) ? true : false );
+}
+
+String JN_linkcode()
+{
+	if(glob_sel_grn.equals("")) return "";
+	return MELGRN_PREFIX + glob_sel_grn;
+}
+
+void grnFunc(String itype)
+{
+	todaydate =  kiboo.todayISODateTimeString();
+	sqlstm = msgtext = "";
+	unm = useraccessobj.username;
+
+	if(itype.equals("shwauditlogs_b"))
+	{
+		showSystemAudit(auditlogs_holder,JN_linkcode(),"");
+		auditlogs_pop.open(shwauditlogs_b);
+	}
+
+	if(!sqlstm.equals(""))
+	{
+		sqlhand.gpSqlExecuter(sqlstm);
+		showGRN(last_showgrn_type);
+	}
+	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
+}
+
+void itemFunc(String itype)
+{
+	todaydate =  kiboo.todayISODateTimeString();
+	sqlstm = msgtext = "";
+	unm = useraccessobj.username;
+
+	if(itype.equals("sourcepecs_b")) // Source specs from Focus
+	{
+		if(Messagebox.show("Sourcing for previous specs will overwrite whatever you've inserted..", "Are you sure?",
+			Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
+
+		sourcePrevious_NameSerials();
+	}
+
+	if(itype.equals("savespecs_b")) // save the specs into mel_grn ONLY
+	{
+		if(glob_sel_grn.equals("")) return;
+		if(saveSpecs())
+		{
+			msgtext = "OK: Specs saved..";
+		}
+	}
+
+	if(itype.equals("admremitem_b")) // remove items from audit-list (admin only)
+	{
+		removeAuditItem();
+	}
+
+	if(itype.equals("postspecs_b")) // post SPECS into u0001
+	{
+		if(glob_sel_grn.equals("")) return;
+
+		if(Messagebox.show("Posting specs-update into FOCUS, you cannot change anything after this..", "Are you sure?",
+		Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
+
+		saveSpecs(); // save to mel_inventory before posting into u0001
+		atgs = updateInventory_GRNItems();
+
+		if(postSpecs()) // post-specs and if ok, update other things
+		{
+			msgtext = "OK: Specs posted..";
+			//sqlstm = "update mel_grn set auditdate='" + todaydate + "', audituser='" + unm + "' where origid=" + glob_sel_grn;
+			toggButts_specupdate(true);
+			add_RWAuditLog(JN_linkcode(),"", "Specs-update posted", unm);
+		}
+	}
+
+	if(itype.equals("postgrn_b")) // upload to FC6 GRN
+	{
+		if(glob_sel_grn.equals("")) return;
+
+		if(Messagebox.show("This will upload a Temp.GRN into FOCUS..", "Are you sure?",
+		Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
+
+		atgs = getAssetTagsFromGrid();
+		if(atgs.equals(""))
+		{
+			msgtext = "ERR: cannot get asset-tags";
+		}
+		else
+		{
+			vno = inject_FC6GRN(atgs);
+			msgtext = "Temp.GRN " + vno + " has been uploaded into FOCUS..";
+			add_RWAuditLog(JN_linkcode(),"", "Upload to FOCUS Temp.GRN", unm);
+		}
+	}
+
+	if(itype.equals("commitauditform_b"))
+	{
+		if(glob_sel_grn.equals("")) return;
+		if(Messagebox.show("Please double-check your audit records, once committed, you are not allowed to modify..", "Are you sure?",
+		Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
+
+		sqlstm = "update mel_grn set auditdate='" + todaydate + "', audituser='" + unm + "' where origid=" + glob_sel_grn;
+		toggButts_specupdate(true);
+		add_RWAuditLog(JN_linkcode(),"", "Commit MEL audit-form", unm);
+		notifyCommit_MELAUDIT(glob_sel_grn);
+	}
+
+	if(!sqlstm.equals(""))
+	{
+		sqlhand.gpSqlExecuter(sqlstm);
+		show_MELGRN(last_showgrn_type);
+	}
+	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
+}
+
+void adminFunc(String itype)
+{
+	adminpop.close();
+	todaydate =  kiboo.todayISODateTimeString();
+	sqlstm = msgtext = "";
+	unm = useraccessobj.username;
+
+	if(glob_sel_grn.equals("")) return;
+
+	if(itype.equals("clearaudit_b"))
+	{
+		sqlstm = "update mel_grn set auditdate=null, audituser=null, audit_id=null where origid=" + glob_sel_grn;
+	}
+
+	if(!sqlstm.equals(""))
+	{
+		sqlhand.gpSqlExecuter(sqlstm);
+		show_MELGRN(last_showgrn_type);
+	}
+	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
+}
+
+class itmdoubleclik implements org.zkoss.zk.ui.event.EventListener
+{
+	// update item-name and item-type in mel_inventory when user ddclick the stock-item
+	public void onEvent(Event event) throws UiException
+	{
+		isel = event.getTarget();
+		ifnd = lbhand.getListcellItemLabel(isel,1);
+		ityp = lbhand.getListcellItemLabel(isel,2);
+		try
+		{
+			jk = grn_rows.getChildren().toArray();
+			for(i=0;i<jk.length;i++)
+			{
+				ki = jk[i].getChildren().toArray();
+				if(ki[0].isChecked()) { ki[2].setValue(ifnd); ki[7].setValue(ityp); } // hardcoded posi, check scanitems_collb[]
+			}
+		} catch (Exception e) {}
+	}
+}
+checkitems_doubleclicker = new itmdoubleclik();
+
+]]>
+</zscript>
+
+<popup id="checkstock_pop">
+	<div sclass="shadowbox" style="background:#ABC11B" width="500px">
+		<hbox>
+			<label value="Item" sclass="k9" />
+			<textbox id="chkstkname_tb" sclass="k9" />
+			<button label="Check stock-name" sclass="k9" onClick="showCheckstock_win(stkname_holder)" />
+		</hbox>
+		<separator height="2px" />
+		<div id="stkname_holder" />
+	</div>
+</popup>
+
+<popup id="auditlogs_pop">
+	<div sclass="shadowbox" style="background:#ef2929;" width="500px" >
+		<label sclass="subhead" value="Audit Logs" />
+		<separator height="3px" />
+		<div id="auditlogs_holder" />
+		<separator height="3px" />
+		<button label="Ok" sclass="k9" onClick="auditlogs_pop.close()" />
+	</div>
+</popup>
+
+<popup id="mpf_pop" sclass="shadowbox">
+	<div style="background:#ABC11B">
+		<hbox>
+			<label value="(Mass update ticked items)" style="color:#ffffff;font-weight:bold" />
+			<button label="Clear boxes / selections" sclass="k9" onClick="mpf_clearBoxes()" />
+			<separator width="10px" />
+			<label id="mpf_lastupdate_blink" sclass="blink" />
+		</hbox>
+	</div>
+	<separator height="2px" />
+	<hbox>
+		<div sclass="shadowbox" style="background:#3D99AA" id="rw_mpfgridy" >
+			<label value="Rentwise Specs" style="font-weight:bold" />
+			<separator height="3px" bar="true" />
+		</div>
+		<div sclass="shadowbox" style="background:#E48313" id="mel_mpfgridy" >
+			<label value="MEL Specs" style="font-weight:bold" />
+			<separator height="3px" bar="true" />
+		</div>
+	</hbox>
+</popup>
+
+<popup id="adminpop">
+	<div sclass="shadowbox" style="background:#E2241C">
+		<vbox>
+		</vbox>
+	</div>
+</popup>
+
+<popup id="rwcoord_pop">
+	<div sclass="shadowbox" style="background:#6590AA">
+		<vbox>
+			<button id="expauditform_b" label="Export MEL audit-form" sclass="k9mo" style="color:#6AB337" onClick="exportMELAuditForm(glob_sel_grn)" />
+			<separator height="5px" />
+			<button id="shwauditlogs_b" label="AuditLog" sclass="k9mo" onClick="grnFunc(self.getId())" />
+			<button id="clearaudit_b" label="Clear audit status" sclass="k9mo" onClick="adminFunc(self.getId())" />
+			<separator height="5px" />
+			<button id="postspecs_b" label="Post specs-update FC6" sclass="k9mo" style="color:#F41717;text-decoration:underline" onClick="itemFunc(self.getId())" visible="false" />
+			<button id="postgrn_b" label="Upload into FC6 GRN" sclass="k9mo" style="color:#F41717;text-decoration:underline" onClick="itemFunc(self.getId())" visible="false" />
+			<button id="admremitem_b" label="Remove item" sclass="k9mo" style="color:#F41717" onClick="itemFunc(self.getId())" visible="false" />
+		</vbox>
+	</div>
+</popup>
+
+<style src="/real-world.css" />
+<style>
+	.GridLayoutNoBorder tr.z-row td.z-row-inner, tr.z-row .z-cell, div.z-grid
+	{
+	border: none; overflow: hidden; zoom: 1;
+	border-top: none; border-left: none; border-right: none; border-bottom: none;
+	} 
+</style>
+
+<div width="1200px">
+<panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true" onClose="panel_Close()">
+<panelchildren style="background:#0C203E">
+
+	<div sclass="shadowbox" style="background:#3E436B">
+		<hbox style="padding:3px">
+			<label value="Start date" sclass="k9b" />
+			<datebox id="startdate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self)" />
+			<label value="End date" sclass="k9b" />
+			<datebox id="enddate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self)" />
+			<textbox id="searhtxt_tb" sclass="k9" visible="false" />
+			<button label="Load" sclass="k9mo" onClick="show_MELGRN(1)" />
+			<textbox id="grnid_tb" width="50px" sclass="k9" />
+			<button label="by MELGRN" sclass="k9mo" onClick="show_MELGRN(2)" />
+			<listbox id="p_location" mold="select" sclass="k9" />
+			<button label="by location" sclass="k9mo" onClick="show_MELGRN(3)" />
+			<button id="admin_b" label="ADMIN" sclass="k9mo" style="color:#D60D0D" visible="false" onClick="adminpop.open(self)" />
+		</hbox>
+	</div>
+
+	<div sclass="shadowbox" style="background:#36427F">
+		<hbox visible="false">
+			<button id="newgrn_b" label="New GRN" sclass="k9mo" onClick="grnFunc(self.getId())" />
+			<button id="remgrn_b" label="Remove" sclass="k9mo" onClick="grnFunc(self.getId())" />
+			<button id="commgrn_b" label="Commit" sclass="k9mo" onClick="grnFunc(self.getId())" />
+			<button id="uptstock_b" label="UPDATE INVENTORY" sclass="k9mo" style="color:#D41212" onClick="grnFunc(self.getId())" visible="false" />
+			<separator width="10px" />
+		</hbox>
+		<separator height="3px" />
+		<div id="melgrnlb_holder" />
+	</div>
+
+	<div id="workarea" sclass="shadowbox" style="background:#3E436B" visible="false">
+		<hbox>
+				<label id="melgrn_no" sclass="subhead1" />
+				<button id="mpftogcheck_b" label="Toggle" sclass="k9mo" onClick="mpfToggCheckbox()" />
+				<button id="mpfbutt" label="MPF" sclass="k9mo" onClick="mpf_pop.open(self)" />
+				<button id="savespecs_b" label="SAVE specs" sclass="k9mo" onClick="itemFunc(self.getId())" />
+				<button id="getstkname_b" label="Get stock-name" sclass="k9mo" onClick="checkstock_pop.open(self)" />
+				<!-- <button id="sourcepecs_b" label="Source previous" sclass="k9mo" onClick="itemFunc(self.getId())" /> -->
+				<separator width="20px" />
+				<button id="commitauditform_b" label="COMMIT MEL audit-form" sclass="k9mo" style="color:#F41717" onClick="itemFunc(self.getId())" />
+				<button id="rwcoord_menu" label="RW Control" sclass="k9mo" style="color:#2279D5" visible="false" onClick="rwcoord_pop.open(self)" />
+		</hbox>
+		<separator height="3px" />
+		<hbox>
+			<label id="melgrnitemcount_lbl" style="color:#eeeeee" />
+			<separator width="10px" />
+			<label value="Asset-tag ticker" style="color:#ffffff" />
+			<textbox id="fast_ticker_tb" />
+		</hbox>
+		<separator height="5px" />
+		<div style="overflow:auto;overflow-y:hidden" >
+			<hbox>
+				<div style="background:#3D99AA" width="1950px">
+					<label sclass="subhead0" value="RENTWISE SPECS" />
+				</div>
+				<div style="background:#E48313" width="1800px">
+					<label sclass="subhead0" value="MEL SPECS" />
+				</div>
+			</hbox>
+			<separator height="2px" />
+			<div id="scanitems_holder" width="6000px" />
+		</div>
+	</div>
+
+<div id="kasiexport" visible="false" />
+
+<zscript>
+<![CDATA[
+
+luhand.populateListbox_ByLookup(p_location, "MEL_PARTNER_LOCATION", 2);
+
+// determine user's location and disable drop-down
+bnh = useraccessobj.branch;
+if(bnh.equals("HQ")) user_location = "SHAH_ALAM";
+else user_location = bnh;
+
+lbhand.matchListboxItems(p_location,user_location);
+if(!user_location.equals("SHAH_ALAM")) p_location.setDisabled(true); // disable location dropdown if not from KL
+
+ngfun.checkMakeGrid(scanitems_colws, scanitems_collb, scanitems_holder, "grn_grid", "grn_rows", "", "", false);
+
+if(glob_focus6_grades == null) glob_focus6_grades = getFocus_StockGrades(); // load FC6 grades
+drawAudit_MPF_things();
+
+if(sechand.allowedUser(useraccessobj.username,"MEL_RW_COORD_USERS"))
+{
+	rwcoord_menu.setVisible(true);
+}
+
+if(useraccessobj.accesslevel == 9)
+{
+	Object[] abk = { admin_b, postspecs_b, postgrn_b, admremitem_b, rwcoord_menu };
+	for(i=0; i<abk.length; i++)
+	{
+		abk[i].setVisible(true);
+	}
+}
+
+class autoticker_tb_Listener implements org.zkoss.zk.ui.event.EventListener
+{
+	public void onEvent(Event event) throws UiException
+	{
+		ik = event.getTarget();
+		autoTicker(ik.getValue());
+		ik.setValue("");
+	}
+}
+fast_ticker_tb.addEventListener("onOK",new autoticker_tb_Listener());
+// 06/02/2015: req Satish/Chandra, to be able to scan asset-tag and auto-tick
+void autoTicker(String iwhat)
+{
+	iwhat = kiboo.replaceSingleQuotes(iwhat.trim());
+	if(iwhat.equals("")) return;
+	jk = grn_rows.getChildren().toArray();
+	for(i=0;i<jk.length;i++)
+	{
+		ki = jk[i].getChildren().toArray();
+		atg = ki[3].getValue();
+
+		if(atg.equals(iwhat))
+		{
+			ki[0].setChecked( (ki[0].isChecked()) ? false : true );
+		}
+	}
+}
+
+]]>
+</zscript>
+</panelchildren>
+</panel>
+</div>
+</zk>
+
+
