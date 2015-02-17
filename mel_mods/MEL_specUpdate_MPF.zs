@@ -135,6 +135,11 @@ void mpf_clearBoxes() // just clear 'em MPF mass-update specs boxes
 	}
 }
 
+void mpf_UpdateAll()
+{
+
+}
+
 void mpfUpdate_specs2(Component iob)
 {
 	//mpf_pop.close();
@@ -261,3 +266,4 @@ void drawAudit_MPF_things()
 	igrd.setParent(rw_mpfgridy);
 	meligrd.setParent(mel_mpfgridy);
 }
+

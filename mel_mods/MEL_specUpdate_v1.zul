@@ -445,6 +445,7 @@ checkitems_doubleclicker = new itmdoubleclik();
 		</hbox>
 	</div>
 	<separator height="2px" />
+	<button label="UPDATE ALL" style="font-weight:bold" onClick="mpf_UpdateAll()" />
 	<hbox>
 		<div sclass="shadowbox" style="background:#3D99AA" id="rw_mpfgridy" >
 			<label value="Rentwise Specs" style="font-weight:bold" />
