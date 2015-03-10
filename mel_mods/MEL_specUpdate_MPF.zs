@@ -137,7 +137,77 @@ void mpf_clearBoxes() // just clear 'em MPF mass-update specs boxes
 
 void mpf_UpdateAll()
 {
+}
 
+void mpf_UpdateAll_listbox()
+{
+	mpf_pop.close();
+	if(adtitems_holder.getFellowIfAny("audititems_lb") == null) return;
+	if(audititems_lb.getSelectedCount() < 1) return;
+
+	Object[] mpfdx = // this one must map against mel_specupdate_lb.adtitemshds
+	{
+		m_grd, m_brand, m_type, m_model, m_processor, m_msize, m_mtype, m_color,
+		m_case, m_coa, m_coa2, m_ram, m_hdd, m_cdrom1, m_comment, m_webcam,
+		m_btooth, m_fprint, m_creader,
+		ml_barcode, ml_notes, ml_operability,
+		ml_operability2, ml_operability3, ml_operability4, ml_operability5,
+		ml_appearance, ml_appearance2, ml_appearance3, ml_appearance4, ml_appearance5,
+		ml_completeness, ml_completeness2, ml_completeness3, ml_completeness4, ml_completeness5,
+		ml_grade, ml_formfactor, ml_casecolor,
+		ml_laptopscreensize, ml_hddsize, ml_ramsize, ml_ramsticks, ml_dimmslot,
+		ml_os, ml_mediadrives, ml_hddwiped, ml_hdddestroyed, ml_hdddestsnum
+	};
+
+	jk = audititems_lb.getSelectedItems().toArray();
+	for(i=0; i<jk.length; i++)
+	{
+		for(k=0; k<mpfdx.length; k++)
+		{
+			bva = "";
+			if(mpfdx[k] instanceof org.zkoss.zul.Textbox) bva = kiboo.replaceSingleQuotes( mpfdx[k].getValue().trim() );
+			if(mpfdx[k] instanceof org.zkoss.zul.Listbox) bva = mpfdx[k].getSelectedItem().getLabel();
+			lbhand.setListcellItemLabel(jk[i],k+4,bva); // refer to mel_specupdate_lb.adtitemshds for posisi
+		}
+	}
+	audititems_lb.invalidate();
+}
+
+void mpf_UpdateSingular_listbox(Component iob)
+{
+	mpf_pop.close();
+	kk = iob.getId(); kk = kk.substring(1,kk.length());
+	tobj = mpf_pop.getFellowIfAny(kk);
+	if(tobj == null) return;
+	spt = "";
+	if(tobj instanceof org.zkoss.zul.Textbox)
+	{
+		spt = kiboo.replaceSingleQuotes( tobj.getValue().trim() );
+		if(spt.equals("")) return;
+	}
+	else
+	if(tobj instanceof org.zkoss.zul.Listbox)
+		spt = tobj.getSelectedItem().getLabel();
+
+	mut = -1;
+	for(k=0; k<specs_mpf_names.length;k++) // scan through field-names to get index
+	{
+		if( specs_mpf_names[k].equals(kk) )
+		{
+			mut = k;
+			break;
+		}
+	}
+	if(mut != -1)
+	{
+		cix = 4 + mut;
+		jk = audititems_lb.getSelectedItems().toArray();
+		for(i=0;i<jk.length;i++)
+		{
+			lbhand.setListcellItemLabel(jk[i],cix,spt); // refer to mel_specupdate_lb.adtitemshds for posisi
+		}
+		mpf_lastupdate_blink.setValue("(" + kk + " updated..)");
+	}
 }
 
 void mpfUpdate_specs2(Component iob)
@@ -196,7 +266,8 @@ class mpfbtnlciker implements org.zkoss.zk.ui.event.EventListener
 	public void onEvent(Event event) throws UiException
 	{
 		isel = event.getTarget();
-		mpfUpdate_specs2(isel);
+		mpf_UpdateSingular_listbox(isel);
+		//mpfUpdate_specs2(isel);
 	}
 }
 mpfbuttoncliker = new mpfbtnlciker();
@@ -236,13 +307,15 @@ void drawAudit_MPF_things()
 				}
 				else
 					if(!mclookup[i].equals("")) luhand.populateListbox_ByLookup(klb, mclookup[i], 2);
+
+				klb.setSelectedIndex(0);
 			}
 			else
 			{
 				ngfun.gpMakeTextbox(nrw, mcid[i], "", k9, "95%", textboxnulldrop);
 			}
 
-			ngfun.gpMakeButton(nrw, mbtn[i], "Upd", k9, mpfbuttoncliker);
+			//ngfun.gpMakeButton(nrw, mbtn[i], "Upd", k9, mpfbuttoncliker);
 		} catch (ArrayIndexOutOfBoundsException e) {}
 
 		try // MEL specs MPF
@@ -254,12 +327,13 @@ void drawAudit_MPF_things()
 				klb = new Listbox(); klb.setMold("select"); klb.setStyle(k9);
 				klb.setId(melcid[i]); klb.setParent(melnrw);
 				if(!melclookup[i].equals("")) luhand.populateListbox_ByLookup(klb, melclookup[i], 2);
+				klb.setSelectedIndex(0);
 			}
 			else
 			{
 				ngfun.gpMakeTextbox(melnrw, melcid[i], "", k9, "95%", textboxnulldrop);
 			}
-			ngfun.gpMakeButton(melnrw, melbtn[i], "Upd", k9, mpfbuttoncliker);
+			//ngfun.gpMakeButton(melnrw, melbtn[i], "Upd", k9, mpfbuttoncliker);
 		} catch (ArrayIndexOutOfBoundsException e) {}
 	}
 

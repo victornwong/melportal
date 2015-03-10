@@ -129,7 +129,7 @@ void doFunc(Object iwhat)
 
 	if(itype.equals("uplcsgn_b")) fnm = "mel_mods/uploadConsignment_v1.zul";
 	if(itype.equals("melgrn_b")) fnm = "mel_mods/MELGRN_v1.zul";
-	if(itype.equals("auditmel_b")) fnm = "mel_mods/MEL_specUpdate_v1.zul";
+	if(itype.equals("auditmel_b")) fnm = "mel_mods/MEL_specUpdate_v2.zul";
 
 	if(!fnm.equals("")) activateModule(mainPlayground,twin,fnm,kiboo.makeRandomId("wpi"),pms,useraccessobj);
 }

@@ -9,8 +9,10 @@ textboxnulldrop = new tbnulldrop();
 
 void toggButts_specupdate(boolean iwhat)
 {
-	Object[] kbb = {
-		mpftogcheck_b, mpfbutt, savespecs_b, getstkname_b, commitauditform_b,
+	Object[] kbb =
+	{
+		//mpftogcheck_b, mpfbutt, savespecs_b, getstkname_b, commitauditform_b,
+		getstkname_b,mpfbutt,removeitem_b,savespecs_b,scanassettag_tb
 	};
 	for(i=0; i<kbb.length; i++)
 	{
@@ -36,21 +38,14 @@ String getAssetTagsFromGrid()
 
 void panel_Close() // main-panel onClose do something
 {
+	/*
 	if(!glob_sel_grn.equals("")) // if GRN selected - save 'em specs
 	{
 		saveSpecs();
 	}
+	*/
 }
 
-/*
-				case 19:
-					luhand.populateListbox_ByLookup(klb, "MEL_EQUIP_PRICE", 2);
-					break;
-				case 20: // diminish values
-				case 21: case 22: case 23: case 24:
-					luhand.populateListbox_ByLookup(klb, "MEL_DIMINISH_PRICE", 2);
-					break;
-*/
 org.zkoss.zul.Row makeItemRow_specup(Component irows, String iname, String iatg, String isn, String iqty, String irwstockname)
 {
 	String[] lookups_ref = { // refer to MEL_specUpdate_v1 -> specs_field_type
@@ -86,6 +81,7 @@ org.zkoss.zul.Row makeItemRow_specup(Component irows, String iname, String iatg,
 
 	for(k=5;k<specs_field_type.length;k++)
 	{
+		/*
 		if(specs_field_type[k].equals("lb"))
 		{
 			klb = new Listbox(); klb.setMold("select"); klb.setStyle(k9); klb.setParent(nrw);
@@ -105,6 +101,8 @@ org.zkoss.zul.Row makeItemRow_specup(Component irows, String iname, String iatg,
 		}
 		else
 			ngfun.gpMakeTextbox(nrw,"","",k9,"95%",textboxnulldrop);
+		*/
+		ngfun.gpMakeLabel(nrw,"","",k9);
 	}
 	item_row_counter++;
 	return nrw;
@@ -116,7 +114,7 @@ void show_MELinventory(String iwhat) // get 'em recs from mel_inventory by melgr
 	if(scanitems_holder.getFellowIfAny("grn_grid") != null) grn_grid.setParent(null);
 	ngfun.checkMakeGrid(scanitems_colws, scanitems_collb, scanitems_holder, "grn_grid", "grn_rows", "", "", false);
 
-	sqlstm = "select * from mel_inventory where melgrn_id=" + iwhat;
+	sqlstm = "select * from mel_inventory where melgrn_id=" + iwhat + " order by rw_assettag";
 	rcs = sqlhand.gpSqlGetRows(sqlstm);
 	if(rcs.size() == 0) return;
 	itmc = 0;
@@ -466,6 +464,7 @@ void notifyCommit_MELAUDIT(String iwhat)
 {
 	if(iwhat.equals("")) return;
 	subj = topeople = emsg = "";
+	/*
 	r = getMELGRN_rec(iwhat);
 	if(r == null) return;
 
@@ -479,4 +478,5 @@ void notifyCommit_MELAUDIT(String iwhat)
 	"\n------------------------------------------------------";
 
 	gmail_sendEmail("", GMAIL_username, GMAIL_password, GMAIL_username, topeople, subj, emsg );
+	*/
 }
