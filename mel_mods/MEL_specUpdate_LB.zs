@@ -3,7 +3,7 @@ import org.victor.*;
 
 	String[] audititems_lb_fl = { "rw_assettag","serial_no","item_desc","rw_stockname",
 	"rw_grade","brand_make","item_type","model","sub_type",
-	"sub_spec","rw_monitortype","rw_color","rw_casing","rw_COA","rw_COA2","hdd","ram","rw_cdrom1","rw_comment",
+	"sub_spec","rw_monitortype","rw_color","rw_casing","rw_COA","rw_COA2","ram","hdd","rw_cdrom1","rw_comment",
 	"rw_webcamyh","rw_bluetoothyh","rw_fingerprintyh","rw_cardreaderyh",
 	"m_barcode","m_notes",
 	"m_operability","m_operability2","m_operability3","m_operability4","m_operability5",
@@ -38,7 +38,7 @@ void saveSpecs_listbox(String iadt)
 		" where serial_no='" + snm + "';";
 	}
 	sqlhand.gpSqlExecuter(sqlstm);
-	guihand.showMessageBox("Specs saved..");
+	//guihand.showMessageBox("Specs saved..");
 }
 
 void showMELADT_meta(String iwhat)
@@ -77,6 +77,7 @@ Object[] melaudithds =
 };
 CSGN_POS = 3;
 ADTSTAT_POS = 5;
+TGRN_POS = 7;
 
 class auditcliker implements org.zkoss.zk.ui.event.EventListener
 {
@@ -86,6 +87,8 @@ class auditcliker implements org.zkoss.zk.ui.event.EventListener
 		glob_sel_audit = lbhand.getListcellItemLabel(isel,0);
 		glob_sel_parentcsgn = lbhand.getListcellItemLabel(isel,CSGN_POS);
 		glob_sel_stat = lbhand.getListcellItemLabel(isel,ADTSTAT_POS);
+		glob_sel_tempgrn = lbhand.getListcellItemLabel(isel,TGRN_POS);
+
 		showMELADT_meta(glob_sel_audit);
 		/*
 		glob_sel_batchno = lbhand.getListcellItemLabel(isel,BATCH_POS);
@@ -246,7 +249,7 @@ void addAsset_ToMELADT(String iatg, String icsgn)
 		return;
 	}
 
-	sqlstm = "select * from mel_inventory where rw_assettag='" + iatg + "' and parent_id=" + icsgn + " and audit_id=null;";
+	sqlstm = "select * from mel_inventory where rw_assettag='" + iatg + "' and parent_id=" + icsgn + " and audit_id is null;";
 	r = sqlhand.gpSqlFirstRow(sqlstm); // get mel_inventory rec by iatg
 	if(r == null)
 	{

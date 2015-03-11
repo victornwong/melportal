@@ -258,7 +258,7 @@ glob_focus6_grades = null;
 checkitems_doubleclicker = null;
 
 last_showaudit_type = 0;
-glob_sel_audit = "";
+glob_sel_audit = glob_sel_tempgrn = "";
 
 void grn_Selected_Callback() // call-back in goodsrecv_funcs.grnclicker
 {
@@ -270,93 +270,6 @@ String JN_linkcode()
 {
 	if(glob_sel_grn.equals("")) return "";
 	return MELAUDIT_PREFIX + glob_sel_audit;
-}
-
-void itemFunc(String itype)
-{
-	todaydate =  kiboo.todayISODateTimeString();
-	sqlstm = msgtext = "";
-	unm = useraccessobj.username;
-
-	if(itype.equals("sourcepecs_b")) // Source specs from Focus
-	{
-		if(Messagebox.show("Sourcing for previous specs will overwrite whatever you've inserted..", "Are you sure?",
-			Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
-
-		sourcePrevious_NameSerials();
-	}
-
-	if(itype.equals("savespecs_b")) // save the specs into mel_grn ONLY
-	{
-		if(glob_sel_grn.equals("")) return;
-		if(saveSpecs())
-		{
-			msgtext = "OK: Specs saved..";
-		}
-	}
-
-	if(itype.equals("admremitem_b")) // remove items from audit-list (admin only)
-	{
-		removeAuditItem();
-	}
-
-	if(itype.equals("postspecs_b")) // post SPECS into u0001
-	{
-		if(glob_sel_grn.equals("")) return;
-
-		if(Messagebox.show("Posting specs-update into FOCUS, you cannot change anything after this..", "Are you sure?",
-		Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
-
-		saveSpecs(); // save to mel_inventory before posting into u0001
-		atgs = updateInventory_GRNItems();
-
-		if(postSpecs()) // post-specs and if ok, update other things
-		{
-			msgtext = "OK: Specs posted..";
-			//sqlstm = "update mel_grn set auditdate='" + todaydate + "', audituser='" + unm + "' where origid=" + glob_sel_grn;
-			toggButts_specupdate(true);
-			add_RWAuditLog(JN_linkcode(),"", "Specs-update posted", unm);
-		}
-	}
-
-	if(itype.equals("postgrn_b")) // upload to FC6 GRN
-	{
-		if(glob_sel_grn.equals("")) return;
-
-		if(Messagebox.show("This will upload a Temp.GRN into FOCUS..", "Are you sure?",
-		Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
-
-		atgs = getAssetTagsFromGrid();
-		if(atgs.equals(""))
-		{
-			msgtext = "ERR: cannot get asset-tags";
-		}
-		else
-		{
-			vno = inject_FC6GRN(atgs);
-			msgtext = "Temp.GRN " + vno + " has been uploaded into FOCUS..";
-			add_RWAuditLog(JN_linkcode(),"", "Upload to FOCUS Temp.GRN", unm);
-		}
-	}
-
-	if(itype.equals("commitauditform_b"))
-	{
-		if(glob_sel_grn.equals("")) return;
-		if(Messagebox.show("Please double-check your audit records, once committed, you are not allowed to modify..", "Are you sure?",
-		Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
-
-		sqlstm = "update mel_grn set auditdate='" + todaydate + "', audituser='" + unm + "' where origid=" + glob_sel_grn;
-		toggButts_specupdate(true);
-		add_RWAuditLog(JN_linkcode(),"", "Commit MEL audit-form", unm);
-		notifyCommit_MELAUDIT(glob_sel_grn);
-	}
-
-	if(!sqlstm.equals(""))
-	{
-		sqlhand.gpSqlExecuter(sqlstm);
-		show_MELGRN(last_showgrn_type);
-	}
-	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
 }
 
 void adminFunc(String itype)
@@ -376,6 +289,11 @@ void adminFunc(String itype)
 	if(itype.equals("settodate_b"))
 	{
 		sqlstm = "update mel_audit set datecreated='" + todaydate + "' where origid=" + glob_sel_audit;
+	}
+
+	if(itype.equals("clrtempgrn_b"))
+	{
+		sqlstm = "update mel_audit set fc6_grn=null where origid=" + glob_sel_audit;
 	}
 
 	if(!sqlstm.equals(""))
@@ -404,6 +322,14 @@ void MELaudit_func(String itype)
 	todaydate = kiboo.todayISODateTimeString();
 	sqlstm = msgtext = "";
 	unm = useraccessobj.username;
+
+	if(itype.equals("sourcepecs_b")) // Source specs from Focus
+	{
+		if(Messagebox.show("Sourcing for previous specs will overwrite whatever you've inserted..", "Are you sure?",
+			Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
+
+		sourcePrevious_NameSerials();
+	}
 
 	if(itype.equals("shwauditlogs_b"))
 	{
@@ -459,6 +385,53 @@ void MELaudit_func(String itype)
 		add_RWAuditLog(JN_linkcode(),"", "Commit MEL audit-form", unm);
 		toggButts_specupdate(true);
 		//notifyCommit_MELAUDIT_2(glob_sel_audit);
+	}
+
+	if(itype.equals("postspecs_b")) // post SPECS into u0001
+	{
+		if(glob_sel_audit.equals("")) return;
+
+		if(Messagebox.show("Posting specs-update into FOCUS..", "Are you sure?",
+		Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
+
+		saveSpecs_listbox(glob_sel_audit); // save to mel_inventory before posting into u0001
+		atgs = updateInventory_AuditItems();
+
+		if(postSpecs_LB()) // post-specs and if ok, update other things
+		{
+			msgtext = "OK: Specs posted..";
+			//sqlstm = "update mel_grn set auditdate='" + todaydate + "', audituser='" + unm + "' where origid=" + glob_sel_grn;
+			//toggButts_specupdate(true);
+			add_RWAuditLog(JN_linkcode(),"", "Specs-update posted", unm);
+		}
+	}
+
+	if(itype.equals("postgrn_b")) // upload to FC6 T.GRN
+	{
+		if(glob_sel_audit.equals("")) return;
+
+		if(!glob_sel_tempgrn.equals("")) // already got a temp.grn
+		{
+			msgtext = "ERR: Items already uploaded to Focus Temp.GRN..";
+		}
+		else
+		{
+			if(Messagebox.show("This will upload a Temp.GRN into FOCUS..", "Are you sure?",
+				Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
+
+			atgs = getAssetTagsFromListbox();
+			if(atgs.equals(""))
+			{
+				msgtext = "ERR: cannot get asset-tags";
+			}
+			else
+			{
+				vno = inject_FC6GRN(atgs);
+				sqlstm = "update mel_audit set fc6_grn='" + vno + "' where origid=" + glob_sel_audit;
+				msgtext = "Temp.GRN " + vno + " has been uploaded into FOCUS..";
+				add_RWAuditLog(JN_linkcode(),"", "Upload to FOCUS Temp.GRN", unm);
+			}
+		}
 	}
 
 	if(!sqlstm.equals(""))
@@ -521,7 +494,7 @@ void MELaudit_func(String itype)
 	<div sclass="shadowbox" style="background:#E2241C">
 		<vbox>
 			<button id="settodate_b" label="Set to date" sclass="k9" onClick="adminFunc(self.getId())" />
-			<button id="clraudit_b" label="Set draft" sclass="k9" onClick="adminFunc(self.getId())" />
+			<button id="clrtempgrn_b" label="Clear T.GRN entry" sclass="k9" onClick="adminFunc(self.getId())" />
 		</vbox>
 	</div>
 </popup>
@@ -529,14 +502,14 @@ void MELaudit_func(String itype)
 <popup id="rwcoord_pop">
 	<div sclass="shadowbox" style="background:#6590AA">
 		<vbox>
-			<button id="expauditform_b" label="Export MEL audit-form" sclass="k9mo" style="color:#6AB337" onClick="exportMELAuditForm(glob_sel_grn)" />
+			<button id="expauditform_b" label="Export audit by MELADT" sclass="k9mo" style="color:#6AB337" onClick="rwcoord_pop.close(); exportMELAuditForm(glob_sel_audit,2)" />
+			<button id="expauditcsgn_b" label="Export audit by CSGN" sclass="k9mo" style="color:#6AB337" onClick="rwcoord_pop.close(); exportMELAuditForm(glob_sel_audit,1)" />
 			<separator height="5px" />
 			<button id="shwauditlogs_b" label="AuditLog" sclass="k9mo" onClick="MELaudit_func(self.getId())" />
-			<button id="clearaudit_b" label="Clear audit status" sclass="k9mo" onClick="adminFunc(self.getId())" />
+			<button id="clraudit_b" label="Clear status to DRAFT" sclass="k9mo" onClick="rwcoord_pop.close(); adminFunc(self.getId())" />
 			<separator height="5px" />
-			<button id="postspecs_b" label="Post specs-update FC6" sclass="k9mo" style="color:#F41717;text-decoration:underline" onClick="itemFunc(self.getId())" visible="false" />
-			<button id="postgrn_b" label="Upload into FC6 GRN" sclass="k9mo" style="color:#F41717;text-decoration:underline" onClick="itemFunc(self.getId())" visible="false" />
-			<!-- <button id="admremitem_b" label="Remove item" sclass="k9mo" style="color:#F41717" onClick="itemFunc(self.getId())" visible="false" /> -->
+			<button id="postspecs_b" label="1. Post specs-update FC6" sclass="k9mo" style="color:#F41717;text-decoration:underline" onClick="MELaudit_func(self.getId())" visible="false" />
+			<button id="postgrn_b" label="2. Upload into FC6 Temp.GRN" sclass="k9mo" style="color:#F41717;text-decoration:underline" onClick="MELaudit_func(self.getId())" visible="false" />
 		</vbox>
 	</div>
 </popup>
@@ -605,6 +578,7 @@ void MELaudit_func(String itype)
 			<separator width="15px" />
 			<label value="Scan asset-tag" sclass="k9mo" style="color:#ffffff" />
 			<textbox id="scanassettag_tb" sclass="k9" />
+			<separator width="15px" />
 			<button id="getstkname_b" label="Get stock-name" sclass="k9mo" onClick="checkstock_pop.open(self)" />
 			<button id="mpfbutt" label="MPF" sclass="k9mo" onClick="mpf_pop.open(self)" />
 			<button id="removeitem_b" label="Remove items" sclass="k9mo" onClick="MELaudit_func(self.getId())" />

@@ -20,6 +20,21 @@ void toggButts_specupdate(boolean iwhat)
 	}
 }
 
+String getAssetTagsFromListbox()
+{
+	ret_assettags = "";
+	if(adtitems_holder.getFellowIfAny("audititems_lb") == null) return "";
+	if(audititems_lb.getItemCount() == 0) return "";
+
+	jk = audititems_lb.getItems().toArray();
+	for(i=0;i<jk.length;i++)
+	{
+		atg = lbhand.getListcellItemLabel(jk[i],0);
+		if(!atg.equals("")) ret_assettags += "'" + atg + "',";
+	}
+	try { ret_assettags = ret_assettags.substring(0,ret_assettags.length()-1); return ret_assettags; } catch (Exception e) { return ""; }
+}
+
 String getAssetTagsFromGrid()
 {
 	ret_assettags = "";
@@ -39,11 +54,13 @@ String getAssetTagsFromGrid()
 void panel_Close() // main-panel onClose do something
 {
 	/*
-	if(!glob_sel_grn.equals("")) // if GRN selected - save 'em specs
+	if(!glob_sel_audit.equals(""))
 	{
-		saveSpecs();
+		saveSpecs_listbox(glob_sel_audit);
 	}
 	*/
+	/* if(!glob_sel_grn.equals("")) // if GRN selected - save 'em specs
+	{	saveSpecs(); } */
 }
 
 org.zkoss.zul.Row makeItemRow_specup(Component irows, String iname, String iatg, String isn, String iqty, String irwstockname)
@@ -328,14 +345,26 @@ void showCheckstock_win(Div idiv) // knockoff from jobsheet_funcs.zs but modifie
 }
 
 // Generate MEL audit-report from Harvin final template 02/02/2015
-void exportMELAuditForm(String iwhat)
+// 11/03/2015: modif to either get mel_inventory by melgrn_id or audit_id
+void exportMELAuditForm(String iwhat, int itype)
 {
-	saveSpecs(); // save latest before audit-form generation
-	sqlstm = "select * from mel_inventory where melgrn_id=" + iwhat;
+	sqlstm = "select * from mel_inventory "; 
+	switch(itype)
+	{
+		case 1: // by parent_id = mel_csgn.origid
+			//saveSpecs(); // save latest before audit-form generation
+			sqlstm += " where parent_id=" + iwhat;
+			break;
+		case 2: // by audit_id
+			saveSpecs_listbox(iwhat); // mel_specupdate_lb.zs
+			sqlstm += " where audit_id=" + iwhat;
+			break;
+	}
+	sqlstm += " order by rw_assettag";
 	rcs = sqlhand.gpSqlGetRows(sqlstm);
 	if(rcs.size() == 0)
 	{
-		guihand.showMessageBox("ERR: no records found..");
+		guihand.showMessageBox("ERR: no audit details found..");
 		return;
 	}
 	itemcount = rowcount = 1;
