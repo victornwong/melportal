@@ -423,58 +423,39 @@ void exportMELAuditForm(String iwhat, int itype)
 			if( meladtfields[i].equals("m_operability") ) // concatenate the 5 columns in db. Pretty ugly coding
 			{
 				kk += kiboo.checkNullString(d.get("m_operability"));
-
-				ck = kiboo.checkNullString(d.get("m_operability2"));
-				if( !ck.equals("") && !ck.equals("TESTED_OK") ) kk += ", " + ck;
-
-				ck = kiboo.checkNullString(d.get("m_operability3"));
-				if( !ck.equals("") && !ck.equals("TESTED_OK") ) kk += ", " + ck;
-
-				ck = kiboo.checkNullString(d.get("m_operability4"));
-				if( !ck.equals("") && !ck.equals("TESTED_OK") ) kk += ", " + ck;
-
-				ck = kiboo.checkNullString(d.get("m_operability5"));
-				if( !ck.equals("") && !ck.equals("TESTED_OK") ) kk += ", " + ck;
+				String[] mops = { "m_operability2", "m_operability3", "m_operability4", "m_operability5" };
+				for(n=0; n<mops.length; n++)
+				{
+					ck = kiboo.checkNullString(d.get(mops[n]));
+					if( !ck.equals("") && !ck.equals("TESTED_OK") ) kk += ", " + ck;
+				}
 			}
 			else
 			if( meladtfields[i].equals("m_appearance") )
 			{
 				kk += kiboo.checkNullString(d.get("m_appearance"));
-
-				ck = kiboo.checkNullString(d.get("m_appearance2"));
-				if( !ck.equals("") && !ck.equals("GOOD") ) kk += ", " + ck;
-
-				ck = kiboo.checkNullString(d.get("m_appearance3"));
-				if( !ck.equals("") && !ck.equals("GOOD") ) kk += ", " + ck;
-
-				ck = kiboo.checkNullString(d.get("m_appearance4"));
-				if( !ck.equals("") && !ck.equals("GOOD") ) kk += ", " + ck;
-
-				ck = kiboo.checkNullString(d.get("m_appearance5"));
-				if( !ck.equals("") && !ck.equals("GOOD") ) kk += ", " + ck;
+				String[] mops = { "m_appearance2", "m_appearance3", "m_appearance4", "m_appearance5" };
+				for(n=0; n<mops.length; n++)
+				{
+					ck = kiboo.checkNullString(d.get(mops[n]));
+					if( !ck.equals("") && !ck.equals("GOOD") ) kk += ", " + ck;
+				}	
 			}
 			else
 			if( meladtfields[i].equals("m_completeness") )
 			{
 				kk += kiboo.checkNullString(d.get("m_completeness"));
-
-				ck = kiboo.checkNullString(d.get("m_completeness2"));
-				if( !ck.equals("") && !ck.equals("COMPLETE") ) kk += ", " + ck ;
-
-				ck = kiboo.checkNullString(d.get("m_completeness3"));
-				if( !ck.equals("") && !ck.equals("COMPLETE") ) kk += ", " + ck ;
-
-				ck = kiboo.checkNullString(d.get("m_completeness4"));
-				if( !ck.equals("") && !ck.equals("COMPLETE") ) kk += ", " + ck ;
-
-				ck = kiboo.checkNullString(d.get("m_completeness5"));
-				if( !ck.equals("") && !ck.equals("COMPLETE") ) kk += ", " + ck ;
+				String[] mops = { "m_completeness2", "m_completeness3", "m_completeness4", "m_completeness5", };
+				for(n=0; n<mops.length; n++)
+				{
+					ck = kiboo.checkNullString(d.get(mops[n]));
+					if( !ck.equals("") && !ck.equals("COMPLETE") ) kk += ", " + ck;
+				}	
 			}
 			else
 			{
 				kk = kiboo.checkNullString( d.get(meladtfields[i]) );
 			}
-
 			excelInsertString(sheet,rowcount,i+1,kk);
 		}
 		itemcount++;
@@ -508,4 +489,18 @@ void notifyCommit_MELAUDIT(String iwhat)
 
 	gmail_sendEmail("", GMAIL_username, GMAIL_password, GMAIL_username, topeople, subj, emsg );
 	*/
+}
+
+void notifyCommit_MELAUDIT_2(String iwhat)
+{
+	if(iwhat.equals("")) return;
+	//subj = topeople = emsg = "";
+	subj = "[COMMIT AUDIT-FORM] MELADT: " + iwhat;
+	topeople = luhand.getLookups_ConvertToStr("MEL_RW_COORD",2,",");
+	emsg =
+	"------------------------------------------------------" +
+	"\nMELADT          : " + iwhat +
+	"\n\nPlease login to post specs-update and Focus GRN" +
+	"\n------------------------------------------------------";
+	gmail_sendEmail("", GMAIL_username, GMAIL_password, GMAIL_username, topeople, subj, emsg );
 }

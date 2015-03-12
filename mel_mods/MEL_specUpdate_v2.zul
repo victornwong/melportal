@@ -384,7 +384,7 @@ void MELaudit_func(String itype)
 		sqlstm = "update mel_audit set auditdate='" + todaydate + "', astatus='COMMIT' where origid=" + glob_sel_audit;
 		add_RWAuditLog(JN_linkcode(),"", "Commit MEL audit-form", unm);
 		toggButts_specupdate(true);
-		//notifyCommit_MELAUDIT_2(glob_sel_audit);
+		notifyCommit_MELAUDIT_2(glob_sel_audit);
 	}
 
 	if(itype.equals("postspecs_b")) // post SPECS into u0001
@@ -440,6 +440,32 @@ void MELaudit_func(String itype)
 		list_MELAUDIT(last_showaudit_type);
 	}
 	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
+}
+
+void showCSGN_breakdown(String icsgn)
+{
+	Object[] csgnbds =
+	{
+		new listboxHeaderWidthObj("AssetTag",true,"100px"),
+		new listboxHeaderWidthObj("S/NO",true,"100px"),
+		new listboxHeaderWidthObj("MELGRN",true,"60px"),
+		new listboxHeaderWidthObj("MELADT",true,"60px"),
+	};
+	Listbox newlb = lbhand.makeVWListbox_Width(csgnbreakdown_holder, csgnbds, "csgnbreakdown_lb", 3);
+	csgnbkheader_lb.setValue("CSGN: " + icsgn + " work breakdown");
+	if(icsgn.equals("")) return;
+	sqlstm = "select rw_assettag,serial_no,melgrn_id,audit_id from mel_inventory where parent_id=" + icsgn + " order by rw_assettag;";
+	rcs = sqlhand.gpSqlGetRows(sqlstm);
+	if(rcs.size() == 0) return;
+	newlb.setRows(20); //newlb.setMold("paging");
+	ArrayList kabom = new ArrayList();
+	String[] fl = { "rw_assettag", "serial_no", "melgrn_id", "audit_id" };
+	for(d : rcs)
+	{
+		ngfun.popuListitems_Data(kabom,fl,d);
+		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
+		kabom.clear();
+	}
 }
 
 ]]>
@@ -532,6 +558,14 @@ void MELaudit_func(String itype)
 	</div>
 </popup>
 
+<popup id="csgnbreakdown_pop">
+	<div sclass="shadowbox" style="background:#99C344" width="450px">
+		<label id="csgnbkheader_lb" sclass="subhead1" />
+		<separator height="3px" />
+		<div id="csgnbreakdown_holder" />
+	</div>
+</popup>
+
 <style src="/real-world.css" />
 <style>
 	.GridLayoutNoBorder tr.z-row td.z-row-inner, tr.z-row .z-cell, div.z-grid
@@ -576,6 +610,10 @@ void MELaudit_func(String itype)
 		<hbox>
 			<label id="meladt_header" sclass="subhead1" />
 			<separator width="15px" />
+			<label id="melcsgncounter_header" sclass="subhead1" />
+		</hbox>	
+		<separator height="5px" />
+		<hbox>
 			<label value="Scan asset-tag" sclass="k9mo" style="color:#ffffff" />
 			<textbox id="scanassettag_tb" sclass="k9" />
 			<separator width="15px" />
@@ -583,6 +621,7 @@ void MELaudit_func(String itype)
 			<button id="mpfbutt" label="MPF" sclass="k9mo" onClick="mpf_pop.open(self)" />
 			<button id="removeitem_b" label="Remove items" sclass="k9mo" onClick="MELaudit_func(self.getId())" />
 			<button id="savespecs_b" label="SAVE specs" sclass="k9mo" onClick="MELaudit_func(self.getId())" />
+			<button label="CSGN breakdown" sclass="k9mo" onClick="showCSGN_breakdown(glob_sel_parentcsgn); csgnbreakdown_pop.open(self)" />
 		</hbox>
 
 		<separator height="3px" />

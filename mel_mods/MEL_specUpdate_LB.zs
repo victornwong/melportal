@@ -45,7 +45,6 @@ void showMELADT_meta(String iwhat)
 {
 	workarea.setVisible(true);
 	meladt_header.setValue("MELADT: " + iwhat);
-
 	toggButts_specupdate( (glob_sel_stat.equals("COMMIT")) ? true : false );
 
 	newlb = lbhand.makeVWListbox_Width(adtitems_holder, adtitemshds, "audititems_lb", 20);
@@ -53,14 +52,18 @@ void showMELADT_meta(String iwhat)
 
 	sqlstm = "select * from mel_inventory where audit_id=" + iwhat;
 	rcs = sqlhand.gpSqlGetRows(sqlstm);
-	if(rcs.size() == 0) return;
-	ArrayList kabom = new ArrayList();
-	for(d : rcs) // show 'em mel_inventory items with audit_id linked
+	if(rcs.size() != 0)
 	{
-		ngfun.popuListitems_Data(kabom,audititems_lb_fl,d);
-		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
-		kabom.clear();
+		ArrayList kabom = new ArrayList();
+		for(d : rcs) // show 'em mel_inventory items with audit_id linked
+		{
+			ngfun.popuListitems_Data(kabom,audititems_lb_fl,d);
+			lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
+			kabom.clear();
+		}
 	}
+
+	show_CSGNAudit_itemcount(glob_sel_parentcsgn);
 }
 
 Object[] melaudithds =
@@ -121,6 +124,7 @@ void list_MELAUDIT(int itype)
 			break;
 
 		case 2: // by meladt
+			if(jid.equals("")) return;
 			sqlstm += "where madt.origid=" + jid;
 			break;
 	}
@@ -226,10 +230,29 @@ Object[] adtitemshds =
 	new listboxHeaderWidthObj("HDD serial",true,""),
 };
 
+void show_CSGNAudit_itemcount(String icsgn)
+{
+	melcsgncounter_header.setValue("");
+	if(icsgn.equals("")) return;
+	sqlstm = "select count(origid) as csgnitemcount from mel_inventory where parent_id=" + icsgn + ";";
+	r = sqlhand.gpSqlFirstRow(sqlstm);
+	itnc = 0;
+	if(r != null) itnc = r.get("csgnitemcount");
+
+	lbc = audititems_lb.getItemCount();
+
+	kts = "[ CSGN " + icsgn + " Qty = " + itnc.toString() + " :: Current MELADT Qty = " + lbc.toString() + " ]";
+	melcsgncounter_header.setValue(kts);
+}
+
 // @params iatg: the asset-tag, icsgn: linking parent csgn id
 void addAsset_ToMELADT(String iatg, String icsgn)
 {
-	if(icsgn.equals("")) return;
+	if(icsgn.equals(""))
+	{
+		guihand.showMessageBox("ERR: please assign a CSGN to this audit-form");
+		return;
+	}
 	Listbox newlb = null;
 	if(adtitems_holder.getFellowIfAny("audititems_lb") == null)
 	{
@@ -260,6 +283,8 @@ void addAsset_ToMELADT(String iatg, String icsgn)
 	ArrayList kabom = new ArrayList();
 	ngfun.popuListitems_Data(kabom,audititems_lb_fl,r);
 	lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
+
+	show_CSGNAudit_itemcount(icsgn);
 }
 
 // Call-back in itmdoubleclik to put selected rw-stockname and type to selected list-items
