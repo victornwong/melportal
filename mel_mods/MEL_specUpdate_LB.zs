@@ -50,7 +50,7 @@ void showMELADT_meta(String iwhat)
 	newlb = lbhand.makeVWListbox_Width(adtitems_holder, adtitemshds, "audititems_lb", 20);
 	newlb.setMultiple(true); newlb.setCheckmark(true);
 
-	sqlstm = "select * from mel_inventory where audit_id=" + iwhat;
+	sqlstm = "select * from mel_inventory where audit_id=" + iwhat + " order by rw_assettag";
 	rcs = sqlhand.gpSqlGetRows(sqlstm);
 	if(rcs.size() != 0)
 	{
@@ -64,6 +64,7 @@ void showMELADT_meta(String iwhat)
 	}
 
 	show_CSGNAudit_itemcount(glob_sel_parentcsgn);
+	fillDocumentsList(documents_holder,MELAUDIT_PREFIX,iwhat);
 }
 
 Object[] melaudithds =
@@ -91,14 +92,7 @@ class auditcliker implements org.zkoss.zk.ui.event.EventListener
 		glob_sel_parentcsgn = lbhand.getListcellItemLabel(isel,CSGN_POS);
 		glob_sel_stat = lbhand.getListcellItemLabel(isel,ADTSTAT_POS);
 		glob_sel_tempgrn = lbhand.getListcellItemLabel(isel,TGRN_POS);
-
 		showMELADT_meta(glob_sel_audit);
-		/*
-		glob_sel_batchno = lbhand.getListcellItemLabel(isel,BATCH_POS);
-		glob_sel_unknown = lbhand.getListcellItemLabel(isel,UNKNOWN_POS);
-		glob_sel_auditdate = lbhand.getListcellItemLabel(isel,AUDITDATE_POS);
-		show_MELGRN_meta(glob_sel_grn);
-		*/
 	}
 }
 auditclik = new auditcliker();
@@ -125,6 +119,7 @@ void list_MELAUDIT(int itype)
 
 		case 2: // by meladt
 			if(jid.equals("")) return;
+			try { nn = Integer.parseInt(jid); } catch (Exception e) { return; }
 			sqlstm += "where madt.origid=" + jid;
 			break;
 	}

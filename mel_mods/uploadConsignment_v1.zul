@@ -188,6 +188,18 @@ void adminFunc(String itype)
 		sendCsgn_Notif(3,glob_sel_csgn);
 	}
 
+	if(itype.equals("delconsgn_b"))
+	{
+		if(Messagebox.show("This will hard-delete all uploaded items as well..", "Are you sure?",
+			Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
+
+		sqlstm = "delete from mel_inventory where parent_id=" + glob_sel_csgn + ";" +
+		"delete from mel_csgn where origid=" + glob_sel_csgn;
+
+		glob_sel_csgn = "";
+		workarea.setVisible(false);
+	}
+
 	if(!sqlstm.equals(""))
 	{
 		sqlhand.gpSqlExecuter(sqlstm);
@@ -260,6 +272,7 @@ void popuCsgnMeta()
 			<button id="settoday_b" label="Set today" sclass="k9mo" onClick="adminFunc(self.getId())" />
 			<button id="setnew_b" label="Set NEW" sclass="k9mo" onClick="adminFunc(self.getId())" />
 			<button id="trynotif_b" label="Set test notif email" sclass="k9mo" onClick="adminFunc(self.getId())" />
+			<button id="delconsgn_b" label="DELETE" onClick="adminFunc(self.getId())" />
 		</vbox>
 	</div>
 </popup>

@@ -18,7 +18,7 @@
 <zscript>
 <![CDATA[
 MYTITLE = "MEL - Audit / Specs Update";
-MYVERSION = "v0.3";
+MYVERSION = "v0.3.1";
 MYPANEL = "melitmspecupdpanl";
 /*
 @Title Inventory items spec update - like in FOCUS (for MEL project)
@@ -28,6 +28,7 @@ MYPANEL = "melitmspecupdpanl";
 Knockoff from RWMS
 06/02/2015: added operability, completeness and appearance to 5 drop-downs,
 10/03/2015: redesign to get items to be QC by user instead of showing the list from MELGRN
+18/03/2015: put in docu-mang things
 */
 import java.util.*;
 import java.text.*;
@@ -242,6 +243,7 @@ PARSE_CSGN_NO_POS = 2;
 PARSE_ITEMDESC_POS = 5;
 PARSE_DATERECEIVED_POS = 14;
 
+MELCSGN_PREFIX = "CSGN";
 MELGRN_PREFIX = "MELGRN";
 MELAUDIT_PREFIX = "MELADT";
 
@@ -471,6 +473,42 @@ void showCSGN_breakdown(String icsgn)
 ]]>
 </zscript>
 
+<popup id="updatefiledesc_popup"> <!-- update file description popup -->
+	<groupbox width="400px">
+		<caption id="updatefiledesc_label" />
+		<label value="Description" style="font-size:9px" />
+		<textbox id="update_file_description" multiline="true" height="70px" width="99%" sclass="k9" />
+		<separator height="3px" />
+		<hbox>
+			<button label="Update" style="font-size:9px" onClick="updateFileDescription(documents_holder,MELAUDIT_PREFIX,glob_sel_audit)" />
+			<button label="Close" style="font-size:9px" onClick="updatefiledesc_popup.close()" />
+		</hbox>
+	</groupbox>
+</popup>
+
+<popup id="uploadfile_popup"> <!-- upload a file popup -->
+	<groupbox>
+	<caption label="Upload a file" />
+		<grid>
+			<rows>
+				<row>
+					<label value="Filename" sclass="k9" />
+					<textbox id="fileupl_file_title" width="200px" sclass="k9" />
+				</row>
+				<row>
+					<label value="Description" style="font-size:9px" />
+					<textbox id="fileupl_file_description" multiline="true" height="60px" width="200px" sclass="k9" />
+				</row>
+			</rows>
+		</grid>
+	</groupbox>
+	<separator height="3px" />
+	<hbox>
+		<button label="Select file" onClick="uploadFile(documents_holder,MELAUDIT_PREFIX,glob_sel_audit)" sclass="k9" />
+		<button label="Close" onClick="uploadfile_popup.close()" sclass="k9" />
+	</hbox>
+</popup>
+
 <popup id="checkstock_pop">
 	<div sclass="shadowbox" style="background:#ABC11B" width="500px">
 		<hbox>
@@ -606,28 +644,50 @@ void showCSGN_breakdown(String icsgn)
 	</div>
 	<separator height="3px" />
 
-	<div id="workarea" sclass="shadowbox" style="background:#3E436B">
-		<hbox>
-			<label id="meladt_header" sclass="subhead1" />
-			<separator width="15px" />
-			<label id="melcsgncounter_header" sclass="subhead1" />
-		</hbox>	
-		<separator height="5px" />
-		<hbox>
-			<label value="Scan asset-tag" sclass="k9mo" style="color:#ffffff" />
-			<textbox id="scanassettag_tb" sclass="k9" />
-			<separator width="15px" />
-			<button id="getstkname_b" label="Get stock-name" sclass="k9mo" onClick="checkstock_pop.open(self)" />
-			<button id="mpfbutt" label="MPF" sclass="k9mo" onClick="mpf_pop.open(self)" />
-			<button id="removeitem_b" label="Remove items" sclass="k9mo" onClick="MELaudit_func(self.getId())" />
-			<button id="savespecs_b" label="SAVE specs" sclass="k9mo" onClick="MELaudit_func(self.getId())" />
-			<button label="CSGN breakdown" sclass="k9mo" onClick="showCSGN_breakdown(glob_sel_parentcsgn); csgnbreakdown_pop.open(self)" />
-		</hbox>
-
-		<separator height="3px" />
-		<div style="overflow:auto;overflow-y:hidden" >
-			<div id="adtitems_holder" width="6000px" />
-		</div>
+	<div id="workarea" sclass="shadowbox" style="background:#3E436B" visible="false">
+		<tabbox> <!-- customer extra things accordion -->
+			<tabs>
+				<tab label="Audit metadata" />
+				<tab label="Attachments" />
+			</tabs>
+			<tabpanels>
+				<tabpanel> <!-- items audit -->
+					<hbox>
+						<label id="meladt_header" sclass="subhead1" />
+						<separator width="15px" />
+						<label id="melcsgncounter_header" sclass="subhead1" />
+					</hbox>	
+					<separator height="5px" />
+					<hbox>
+						<label value="Scan asset-tag" sclass="k9mo" style="color:#ffffff" />
+						<textbox id="scanassettag_tb" sclass="k9" />
+						<separator width="15px" />
+						<button id="getstkname_b" label="Get stock-name" sclass="k9mo" onClick="checkstock_pop.open(self)" />
+						<button id="mpfbutt" label="MPF" sclass="k9mo" onClick="mpf_pop.open(self)" />
+						<button id="removeitem_b" label="Remove items" sclass="k9mo" onClick="MELaudit_func(self.getId())" />
+						<button id="savespecs_b" label="SAVE specs" sclass="k9mo" onClick="MELaudit_func(self.getId())" />
+						<button label="CSGN breakdown" sclass="k9mo" onClick="showCSGN_breakdown(glob_sel_parentcsgn); csgnbreakdown_pop.open(self)" />
+					</hbox>
+					<separator height="3px" />
+					<div style="overflow:auto;overflow-y:hidden" >
+						<div id="adtitems_holder" width="6000px" />
+					</div>
+				</tabpanel>
+				<tabpanel> <!-- attachments -->
+					<div sclass="shadowbox" style="background:#555753;" width="550px" >
+						<separator height="3px" />
+						<hbox>
+							<button id="uploaddoc_btn" label="Upload file" sclass="k9" onClick="showUploadPopup(MELAUDIT_PREFIX,glob_sel_audit)" />
+							<button id="viewdoc_btn" label="View file" sclass="k9" onClick="viewFile()" />
+							<button id="editdoc_btn" label="Update" sclass="k9" onClick="updatefiledesc_popup.open(self)" />
+							<button id="deletedoc_btn" label="Delete" sclass="k9" onClick="deleteFile(documents_holder,MELAUDIT_PREFIX,glob_sel_audit)" />
+						</hbox>
+						<separator height="3px" />
+						<div id="documents_holder" />
+					</div>
+				</tabpanel>
+			</tabpanels>
+		</tabbox>
 	</div>
 
 	<div id="kasiexport" visible="false" />

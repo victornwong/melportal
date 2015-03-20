@@ -1,6 +1,14 @@
 import org.victor.*;
 // Funcs used in MEL_specUpdate_v1.zul. Knockoff and modif for MEL
 
+Object getLookup_valuefield(String idisptext, int ifnum)
+{
+	String[] fnam = { "value1", "value2", "value3", "value4", "value5", "value6", "value7", "value8" };
+	sqlstm = "select top 1 " + fnam[ifnum-1] + " from lookups where disptext='" + idisptext + "';";
+	return sqlhand.gpSqlFirstRow(sqlstm);
+}
+
+
 item_row_counter = 1;
 
 class tbnulldrop implements org.zkoss.zk.ui.event.EventListener
@@ -346,6 +354,7 @@ void showCheckstock_win(Div idiv) // knockoff from jobsheet_funcs.zs but modifie
 
 // Generate MEL audit-report from Harvin final template 02/02/2015
 // 11/03/2015: modif to either get mel_inventory by melgrn_id or audit_id
+// 16/03/2015: Lai gave the diminish values for the drop-downs - generate "SERVICE" and "CONDITION" columns as req by Colm
 void exportMELAuditForm(String iwhat, int itype)
 {
 	sqlstm = "select * from mel_inventory "; 
@@ -417,39 +426,86 @@ void exportMELAuditForm(String iwhat, int itype)
 	for(d : rcs)
 	{
 		excelInsertString(sheet,rowcount,0,itemcount.toString()); // Item No
+		condition_txt = "";
+
 		for(i=0; i<meladtfields.length; i++)
 		{
 			kk = "";
 			if( meladtfields[i].equals("m_operability") ) // concatenate the 5 columns in db. Pretty ugly coding
 			{
-				kk += kiboo.checkNullString(d.get("m_operability"));
+				katu = kiboo.checkNullString(d.get("m_operability"));
+				kk += katu;
+				dvr = getLookup_valuefield(katu,1);
+				if(dvr != null)
+				{
+					condition_txt += katu + " : " + dvr.get("value1") + ", ";
+				}
+
 				String[] mops = { "m_operability2", "m_operability3", "m_operability4", "m_operability5" };
 				for(n=0; n<mops.length; n++)
 				{
 					ck = kiboo.checkNullString(d.get(mops[n]));
-					if( !ck.equals("") && !ck.equals("TESTED_OK") ) kk += ", " + ck;
+					if( !ck.equals("") && !ck.equals("TESTED_OK") )
+					{
+						kk += ", " + ck;
+						dvr = getLookup_valuefield(ck,1);
+						if(dvr != null)
+						{
+							condition_txt += ck + " : " + dvr.get("value1") + ", ";
+						}
+					}
 				}
 			}
 			else
 			if( meladtfields[i].equals("m_appearance") )
 			{
-				kk += kiboo.checkNullString(d.get("m_appearance"));
+				katu = kiboo.checkNullString(d.get("m_appearance"));
+				kk += katu;
+				dvr = getLookup_valuefield(katu,1);
+				if(dvr != null)
+				{
+					condition_txt += katu + " : " + dvr.get("value1") + ",";
+				}
+
 				String[] mops = { "m_appearance2", "m_appearance3", "m_appearance4", "m_appearance5" };
 				for(n=0; n<mops.length; n++)
 				{
 					ck = kiboo.checkNullString(d.get(mops[n]));
-					if( !ck.equals("") && !ck.equals("GOOD") ) kk += ", " + ck;
+					if( !ck.equals("") && !ck.equals("GOOD") )
+					{
+						kk += ", " + ck;
+						dvr = getLookup_valuefield(ck,1);
+						if(dvr != null)
+						{
+							condition_txt += ck + " : " + dvr.get("value1") + ", ";
+						}
+					}
 				}	
 			}
 			else
 			if( meladtfields[i].equals("m_completeness") )
 			{
-				kk += kiboo.checkNullString(d.get("m_completeness"));
+				katu = kiboo.checkNullString(d.get("m_completeness"));
+				kk += katu;
+				dvr = getLookup_valuefield(katu,1);
+				if(dvr != null)
+				{
+					condition_txt += katu + " : " + dvr.get("value1") + ",";
+				}
+
 				String[] mops = { "m_completeness2", "m_completeness3", "m_completeness4", "m_completeness5", };
 				for(n=0; n<mops.length; n++)
 				{
 					ck = kiboo.checkNullString(d.get(mops[n]));
-					if( !ck.equals("") && !ck.equals("COMPLETE") ) kk += ", " + ck;
+					if( !ck.equals("") && !ck.equals("COMPLETE") )
+					{
+						kk += ", " + ck;
+						dvr = getLookup_valuefield(ck,1);
+						if(dvr != null)
+						{
+							condition_txt += ck + " : " + dvr.get("value1") + ", ";
+						}
+					}
 				}	
 			}
 			else
@@ -458,6 +514,10 @@ void exportMELAuditForm(String iwhat, int itype)
 			}
 			excelInsertString(sheet,rowcount,i+1,kk);
 		}
+		excelInsertString(sheet,rowcount,meladtfields.length+1,"NO SERVICE"); // service column
+		try { condition_txt = condition_txt.substring(0,condition_txt.length()-2); } catch (Exception e) {}
+		excelInsertString(sheet,rowcount,meladtfields.length+2,condition_txt); // conditions column
+
 		itemcount++;
 		rowcount++;
 	}
