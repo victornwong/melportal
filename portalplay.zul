@@ -209,7 +209,7 @@ if(!unm.equals("madmin")) // default panels to load for users
 	*/
 	//reloadWallMod(1);
 
-	if(unm.equals("laikw"))
+	if(unm.equals("laikw") || unm.equals("nisha"))
 	{
 		uplcsgn_b.setVisible(true);
 	}

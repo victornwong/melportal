@@ -18,7 +18,7 @@
 <zscript>
 <![CDATA[
 MYTITLE = "MEL - Audit / Specs Update";
-MYVERSION = "v0.3.1";
+MYVERSION = "v0.3.2";
 MYPANEL = "melitmspecupdpanl";
 /*
 @Title Inventory items spec update - like in FOCUS (for MEL project)
@@ -29,6 +29,7 @@ Knockoff from RWMS
 06/02/2015: added operability, completeness and appearance to 5 drop-downs,
 10/03/2015: redesign to get items to be QC by user instead of showing the list from MELGRN
 18/03/2015: put in docu-mang things
+27/03/2015: chandra req, row-count for items, RW asset-tag column in MEL audit report
 */
 import java.util.*;
 import java.text.*;

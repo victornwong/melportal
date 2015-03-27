@@ -13,6 +13,17 @@ import org.victor.*;
 	"m_os","m_mediadrives","m_hddwiped","m_hdddestroyed","m_hdddestsnum"
 	};
 
+// Refresh 'em row counts in the audit items listbox
+void refresh_Items_rowcount()
+{
+	if(adtitems_holder.getFellowIfAny("audititems_lb") == null) return;
+	jk = audititems_lb.getItems().toArray();
+	for(i=0; i<jk.length; i++)
+	{
+		lbhand.setListcellItemLabel(jk[i],0, (i+1).toString() + "." );
+	}
+}
+
 // Knockoff from mel_specupdate_funcs.zs
 void saveSpecs_listbox(String iadt)
 {
@@ -23,12 +34,12 @@ void saveSpecs_listbox(String iadt)
 	jk = audititems_lb.getItems().toArray();
 	for(i=0; i<jk.length; i++)
 	{
-		itm = lbhand.getListcellItemLabel(jk[i],3); // refer to mel_specupdate_lb.adtitemshds
-		snm = lbhand.getListcellItemLabel(jk[i],1);
+		itm = lbhand.getListcellItemLabel(jk[i],4); // refer to mel_specupdate_lb.adtitemshds
+		snm = lbhand.getListcellItemLabel(jk[i],2);
 		sx = ct = "";
 		for(k=0; k<MEL_invt_fields.length;k++)
 		{
-			cix = k + 4; // offset to listitem column
+			cix = k + ITEMS_OFFSET; // offset to listitem column
 			ct = lbhand.getListcellItemLabel(jk[i],cix);
 			sx += MEL_invt_fields[k] + "='" + ct + "',";
 		}
@@ -57,10 +68,12 @@ void showMELADT_meta(String iwhat)
 		ArrayList kabom = new ArrayList();
 		for(d : rcs) // show 'em mel_inventory items with audit_id linked
 		{
+			kabom.add("999"); // row count
 			ngfun.popuListitems_Data(kabom,audititems_lb_fl,d);
 			lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 			kabom.clear();
 		}
+		refresh_Items_rowcount();
 	}
 
 	show_CSGNAudit_itemcount(glob_sel_parentcsgn);
@@ -164,8 +177,10 @@ void showCSGNlist(String ilocation)
 	}
 }
 
+ITEMS_OFFSET = 5;
 Object[] adtitemshds =
 {
+	new listboxHeaderWidthObj("No.",true,"50px"),
 	new listboxHeaderWidthObj("Asset tag",true,"100px"),
 	new listboxHeaderWidthObj("Serial",true,"100px"),
 	new listboxHeaderWidthObj("MEL item",true,"200px"),
@@ -276,8 +291,10 @@ void addAsset_ToMELADT(String iatg, String icsgn)
 	}
 
 	ArrayList kabom = new ArrayList();
+	kabom.add("999"); // Row count
 	ngfun.popuListitems_Data(kabom,audititems_lb_fl,r);
 	lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
+	refresh_Items_rowcount();
 
 	show_CSGNAudit_itemcount(icsgn);
 }
@@ -290,8 +307,8 @@ void sumbatStockName(String irwstockname, String itype)
 	jk = audititems_lb.getSelectedItems().toArray();
 	for(i=0; i<jk.length; i++)
 	{
-		lbhand.setListcellItemLabel(jk[i], 3, irwstockname); // refer to adtitemshds for item posisi
-		lbhand.setListcellItemLabel(jk[i], 6, itype);
+		lbhand.setListcellItemLabel(jk[i], 4, irwstockname); // refer to adtitemshds for item posisi
+		lbhand.setListcellItemLabel(jk[i], 7, itype);
 	}
 }
 

@@ -398,6 +398,7 @@ void exportMELAuditForm(String iwhat, int itype)
 	String[] meladtfields = { // as defined by Harvin 02/02/2015
 		"contract_no", // Contract
 		"batch_no", // Batch no
+		"rw_assettag", // RW asset-tag
 		"serial_no", // Serial no
 		"mel_asset", // Asset Tag (MEL Ref)
 		"brand_make", // Brand

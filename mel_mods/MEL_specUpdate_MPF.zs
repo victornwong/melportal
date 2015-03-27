@@ -167,7 +167,7 @@ void mpf_UpdateAll_listbox()
 			bva = "";
 			if(mpfdx[k] instanceof org.zkoss.zul.Textbox) bva = kiboo.replaceSingleQuotes( mpfdx[k].getValue().trim() );
 			if(mpfdx[k] instanceof org.zkoss.zul.Listbox) bva = mpfdx[k].getSelectedItem().getLabel();
-			lbhand.setListcellItemLabel(jk[i],k+4,bva); // refer to mel_specupdate_lb.adtitemshds for posisi
+			lbhand.setListcellItemLabel(jk[i],k+ITEMS_OFFSET,bva); // refer to mel_specupdate_lb.adtitemshds for posisi
 		}
 	}
 	audititems_lb.invalidate();
@@ -200,7 +200,7 @@ void mpf_UpdateSingular_listbox(Component iob)
 	}
 	if(mut != -1)
 	{
-		cix = 4 + mut;
+		cix = 5 + mut;
 		jk = audititems_lb.getSelectedItems().toArray();
 		for(i=0;i<jk.length;i++)
 		{

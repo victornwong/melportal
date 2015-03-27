@@ -73,9 +73,9 @@ String updateInventory_AuditItems()
 
 		for(i=0;i<jk.length;i++)
 		{
-			itm = lbhand.getListcellItemLabel(jk[i],3);
-			atg = lbhand.getListcellItemLabel(jk[i],0);
-			snm = lbhand.getListcellItemLabel(jk[i],1);
+			itm = lbhand.getListcellItemLabel(jk[i],4);
+			atg = lbhand.getListcellItemLabel(jk[i],1);
+			snm = lbhand.getListcellItemLabel(jk[i],2);
 
 			if(!itm.equals("")) // only entry with item-name
 			{
@@ -132,8 +132,8 @@ boolean postSpecs_LB()
 	sqlstm = "";
 	for(i=0;i<jk.length;i++)
 	{
-		itmn = lbhand.getListcellItemLabel(jk[i],3);
-		atg = lbhand.getListcellItemLabel(jk[i],0);
+		itmn = lbhand.getListcellItemLabel(jk[i],4);
+		atg = lbhand.getListcellItemLabel(jk[i],1);
 
 		if(!atg.equals("NOTAG") && !atg.equals("")) // ignore NOTAG or blank asset-tags -- inserted by RWMS
 		{
@@ -141,7 +141,7 @@ boolean postSpecs_LB()
 			sqlstm += "update u0001 set ";
 			for(k=0; k<specs_sql_fields.length; k++)
 			{
-				cix = k + 4;
+				cix = k + ITEMS_OFFSET;
 				ct = lbhand.getListcellItemLabel(jk[i],cix);
 				fql += specs_sql_fields[k] + "='" + ct + "',";
 			}
