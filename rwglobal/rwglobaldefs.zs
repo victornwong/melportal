@@ -14,7 +14,7 @@ SYS_EMAILUSER = "notification";
 SYS_EMAILPWD = "rent2000wise";
 
 GMAIL_username = "rentwisenotify@gmail.com";
-GMAIL_password = "dell2000";
+GMAIL_password = "dellcomputer";
 
 GPF_PREFIX = "GPF"; // general-purpose-form prefix - use in doc-attach and etc
 

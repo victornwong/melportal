@@ -16,15 +16,15 @@
 MYTITLE = "MEL - Consignment Note Management";
 MYVERSION = "v0.1.1";
 MYPANEL = "meluplcsgnpanel";
-/*
-@Title MEL upload consignment note
-@Author Victor Wong
-@Since 09/12/2014
-@Notes
-12/01/2015: if snum is NULL, take MEL asset-tag as snum. Also update mel_csgn.usedmelassettag
-29/01/2015: req to add mel_csgn.mel_accept flag, MEL can set whether to accept the quote or whatever
 
-*/
+/**
+ * @title MEL upload consignment note
+ * @author Victor Wong
+ * @since 09/12/2014
+ * @notes
+ * 12/01/2015: if snum is NULL, take MEL asset-tag as snum. Also update mel_csgn.usedmelassettag
+ * 29/01/2015: req to add mel_csgn.mel_accept flag, MEL can set whether to accept the quote or whatever
+ */
 import java.util.*;
 import java.text.*;
 import java.io.*;
@@ -121,7 +121,7 @@ void doFunc(String itype)
 				sqlstm = "update mel_csgn set mstatus='COMMIT' where origid=" + glob_sel_csgn;
 
 				toggButts(true);
-				//sendCsgn_Notif(1,glob_sel_csgn); PROBLEM!! cannot send notif email, string index -1
+				sendCsgn_Notif(1,glob_sel_csgn); // PROBLEM!! cannot send notif email, string index -1
 				add_RWAuditLog(JN_linkcode(),"", "COMMIT consignment note : " + glob_sel_csgn, unm);
 			}
 		}
@@ -272,7 +272,7 @@ void popuCsgnMeta()
 			<button id="settoday_b" label="Set today" sclass="k9mo" onClick="adminFunc(self.getId())" />
 			<button id="setnew_b" label="Set NEW" sclass="k9mo" onClick="adminFunc(self.getId())" />
 			<button id="trynotif_b" label="Set test notif email" sclass="k9mo" onClick="adminFunc(self.getId())" />
-			<button id="delconsgn_b" label="DELETE" onClick="adminFunc(self.getId())" />
+			
 		</vbox>
 	</div>
 </popup>
@@ -292,6 +292,8 @@ void popuCsgnMeta()
 		<vbox>
 			<button id="notifypart_b" label="Re-notify partner" sclass="k9mo" onClick="doFunc(self.getId())" />
 			<button id="shwauditlogs_b" label="Show audit-log" sclass="k9mo" onClick="adminFunc(self.getId())" />
+			<separator bar="true" />
+			<button id="delconsgn_b" label="DELETE upload" style="color:#E12626" onClick="adminFunc(self.getId())" />
 		</vbox>
 	</div>
 </popup>
@@ -367,7 +369,7 @@ void popuCsgnMeta()
 		<separator width="20px" />
 		<button label="MEL acceptance" sclass="k9mo" style="color:#19E137" onClick="melaccpt_pop.open(self)" />
 		<separator width="30px" />
-		<button id="rwcoord_b" label="RW Coordinator" sclass="k9mo" style="color:#2279D5" onClick="rwcoordpop.open(self)" />
+		<button id="rwcoord_b" label="RW Coordinator" sclass="k9mo" style="color:#2279D5" onClick="rwcoordpop.open(self)" visible="false" />
 	</hbox>
 </div>
 <separator height="2px" />
@@ -408,6 +410,11 @@ void popuCsgnMeta()
 <![CDATA[
 
 luhand.populateListbox_ByLookup(p_location, "MEL_PARTNER_LOCATION", 2);
+
+if(sechand.allowedUser(useraccessobj.username,"MEL_RW_COORD_USERS"))
+{
+	rwcoord_b.setVisible(true);
+}
 
 if(useraccessobj.accesslevel == 9)
 {

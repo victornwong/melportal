@@ -291,11 +291,17 @@ void reallySaveMEL_equiplist()
 		matg = matg.substring(0,matg.length()-1);
 	} catch (Exception e) { guihand.showMessageBox("ERR: Anomalies in equipments list.. Cannot SAVE!"); return; }
 
-	sqlstm = "select origid from mel_inventory where serial_no in (" + snm + ") or mel_asset in (" + matg + ");";
+	//sqlstm = "select serial_no from mel_inventory where serial_no in (" + snm + ") or mel_asset in (" + matg + ");";
+
+
+	sqlstm = "select mi.contract_no,mi.serial_no, mi.mel_asset, mc.csgn from mel_inventory mi " + 
+	"left join mel_csgn mc on mi.parent_id=mc.origid where mi.serial_no in (" + snm + ") or mi.mel_asset in (" + matg + ");";
+
 	r = sqlhand.gpSqlGetRows(sqlstm);
 	if(r.size() > 0)
 	{
-		guihand.showMessageBox("ERR: Some of the equipments are already in our database. No duplicates allowed!");
+		//guihand.showMessageBox("ERR: Some of the equipments are already in our database. No duplicates allowed!");
+		alert("ERR: Some of the equipments are already in our database. No duplicates allowed!\n" + r);
 		return;
 	}
 
@@ -331,10 +337,6 @@ void sendCsgn_Notif(int itype, String icsgn)
 	subj = topeople = msgtext = partn = "";
 	mf = (r.get("usedmelassettag") == null) ? "NO" : ( (r.get("usedmelassettag")) ? "YES" : "NO");
 
-	lui = "MEL_" + kiboo.checkNullString(r.get("rwlocation"));
-	if(!lui.equals("MEL_")) // csgn got rwlocation, can get email addrs for partners
-		partn = luhand.getLookups_ConvertToStr(lui,2,",");
-
 	emsg =
 	"------------------------------------------------------" +
 	"\nMEL CSGN REF      : " + kiboo.checkNullString( r.get("csgn") ) +
@@ -364,12 +366,23 @@ void sendCsgn_Notif(int itype, String icsgn)
 			topeople = "victor@rentwise.com";
 			break;
 
-		case 4: // resend notification to partner defined in lookup MEL_KUALA_LUMPUR, MEL_SABAH, MEL_SARAWAK
+		case 4: // resend notification to partner defined in lookup MEL_SHAH_ALAM, MEL_KOTA_KINABALU, MEL_KUCHING
 			subj = "[NOTIFICATION] MEL Consignment-note: " + icsgn;
 			if(!lui.equals("MEL_"))
 			{
-				topeople = partn;
-				msgtext = "Sending notification email to partner..";
+				lui = "MEL_" + kiboo.checkNullString(r.get("rwlocation"));
+				if(!lui.equals("MEL_")) // csgn got rwlocation, can get email addrs for partners
+				{
+					try
+					{
+						topeople = luhand.getLookups_ConvertToStr(lui,2,",");
+						msgtext = "Sending notification email to partner..";
+					} catch (Exception e)
+					{
+						topeople = "";
+						msgtext = "ERR: cannot get partner email address";
+					}
+				}
 			}
 			else
 				msgtext = "ERR: cannot send email, partner email address unavailable..";
