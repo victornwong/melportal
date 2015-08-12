@@ -18,7 +18,7 @@
 <zscript>
 <![CDATA[
 MYTITLE = "MEL - Audit / Specs Update";
-MYVERSION = "v0.3.2";
+MYVERSION = "v0.3.3";
 MYPANEL = "melitmspecupdpanl";
 /*
 @Title Inventory items spec update - like in FOCUS (for MEL project)
@@ -30,6 +30,7 @@ Knockoff from RWMS
 10/03/2015: redesign to get items to be QC by user instead of showing the list from MELGRN
 18/03/2015: put in docu-mang things
 27/03/2015: chandra req, row-count for items, RW asset-tag column in MEL audit report
+12/08/2015: Nisha gave processor generation types for drop-downs which will lead to getting the price from market-price-book
 */
 import java.util.*;
 import java.text.*;

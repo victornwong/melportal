@@ -190,9 +190,9 @@ Object[] adtitemshds =
 	new listboxHeaderWidthObj("Brand",true,"90px"),
 	new listboxHeaderWidthObj("Type",true,"50px"),
 	new listboxHeaderWidthObj("Model",true,"90px"),
-	new listboxHeaderWidthObj("Processor",true,"90px"),
+	new listboxHeaderWidthObj("Proc / Monitor",true,"90px"),
 
-	new listboxHeaderWidthObj("M.Size",true,""),
+	new listboxHeaderWidthObj("P.Speed / M.Size",true,""),
 	new listboxHeaderWidthObj("M.Type",true,""),
 	new listboxHeaderWidthObj("Color",true,""),
 	new listboxHeaderWidthObj("Case",true,""),

@@ -2,7 +2,7 @@ import org.victor.*;
 // MPF functions for MEL spec-update module
 
 String[] mlbl = {
-"Grd", "Brand", "Type", "Model", "Processor", "M.Size", "M.Type", "Color",
+"Grd", "Brand", "Type", "Model", "Processor / Monitor", "P.Speed / M.Size", "M.Type", "Color",
 "Case", "COA", "COA2", "RAM", "HDD", "CDROM1", "Comment", "Webcam",
 "B.Tooth", "F.Print", "C.Reader",
 };
@@ -20,13 +20,13 @@ String[] mbtn = {
 };
 
 String[] mctype = {
-"lb", "tb", "tb", "tb", "tb", "tb", "tb", "lb",
+"lb", "tb", "tb", "tb", "lb", "lb", "tb", "lb",
 "lb", "tb", "tb", "tb", "tb", "lb", "tb", "lb",
 "lb", "lb", "lb",
 };
 
 String[] mclookup = {
-"", "", "", "", "", "", "", "MEL_ADT_CASECOLOR",
+"", "", "", "", "MEL_PROCESSOR", "MEL_PROCESSOR_SPEED", "", "MEL_ADT_CASECOLOR",
 "MEL_ADT_FORMFACTOR", "", "", "", "", "MEL_ADT_MEDIADRIVES", "", "YESNO_DEF",
 "YESNO_DEF","YESNO_DEF","YESNO_DEF",
 };

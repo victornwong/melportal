@@ -429,6 +429,28 @@ void exportMELAuditForm(String iwhat, int itype)
 		excelInsertString(sheet,rowcount,0,itemcount.toString()); // Item No
 		condition_txt = "";
 
+		totaldiminish = 0.0;
+
+		// try to get unit price from rw_mktpricebook based on "processor/monitor + p.speed/m.size"
+		// hardcoded to 'MEL' category 
+		mktprice = "0";
+		mktpriceval = 0;
+		pbitm = kiboo.checkNullString(d.get("sub_type")).trim() + " " + kiboo.checkNullString(d.get("sub_spec")).trim();
+		//itmtype = "M" + kiboo.checkNullString(d.get("item_type")).trim(); // play-god and prepend "M"
+		itmtype = kiboo.checkNullString(d.get("item_type")).trim();
+
+		if(!pbitm.equals("")) // dig market-price only if name got
+		{
+			digsql = "select top 1 price from rw_mktpricebook where category='MEL' and eqtype='" + itmtype + "' and " +
+			"itemname='" + pbitm + "';";
+			mpr = sqlhand.gpSqlFirstRow(digsql);
+			if(mpr != null) // found something - insert into worksheet
+			{
+				try { mktprice = (mpr.get("price") == null) ? "0" : mpr.get("price").toString(); } catch (Exception e) {}
+				mktpriceval = Float.parseFloat(mktprice);
+			}
+		}
+
 		for(i=0; i<meladtfields.length; i++)
 		{
 			kk = "";
@@ -440,6 +462,9 @@ void exportMELAuditForm(String iwhat, int itype)
 				if(dvr != null)
 				{
 					condition_txt += katu + " : " + dvr.get("value1") + ", ";
+					dv = 0.0;
+					try { dv = Float.parseFloat(dvr.get("value1")); } catch (Exception e) { if(dvr.get("value1").equals("WU")) dv = mktpriceval; }
+					totaldiminish += dv;
 				}
 
 				String[] mops = { "m_operability2", "m_operability3", "m_operability4", "m_operability5" };
@@ -453,6 +478,9 @@ void exportMELAuditForm(String iwhat, int itype)
 						if(dvr != null)
 						{
 							condition_txt += ck + " : " + dvr.get("value1") + ", ";
+							dv = 0.0;
+							try { dv = Float.parseFloat(dvr.get("value1")); } catch (Exception e) { if(dvr.get("value1").equals("WU")) dv = mktpriceval; }
+							totaldiminish += dv;
 						}
 					}
 				}
@@ -466,6 +494,9 @@ void exportMELAuditForm(String iwhat, int itype)
 				if(dvr != null)
 				{
 					condition_txt += katu + " : " + dvr.get("value1") + ",";
+					dv = 0.0;
+					try { dv = Float.parseFloat(dvr.get("value1")); } catch (Exception e) { if(dvr.get("value1").equals("WU")) dv = mktpriceval; }
+					totaldiminish += dv;
 				}
 
 				String[] mops = { "m_appearance2", "m_appearance3", "m_appearance4", "m_appearance5" };
@@ -479,6 +510,10 @@ void exportMELAuditForm(String iwhat, int itype)
 						if(dvr != null)
 						{
 							condition_txt += ck + " : " + dvr.get("value1") + ", ";
+							dv = 0.0;
+							try { dv = Float.parseFloat(dvr.get("value1")); } catch (Exception e) { if(dvr.get("value1").equals("WU")) dv = mktpriceval; }
+							totaldiminish += dv;
+
 						}
 					}
 				}	
@@ -492,6 +527,9 @@ void exportMELAuditForm(String iwhat, int itype)
 				if(dvr != null)
 				{
 					condition_txt += katu + " : " + dvr.get("value1") + ",";
+					dv = 0.0;
+					try { dv = Float.parseFloat(dvr.get("value1")); } catch (Exception e) { if(dvr.get("value1").equals("WU")) dv = mktpriceval; }
+					totaldiminish += dv;
 				}
 
 				String[] mops = { "m_completeness2", "m_completeness3", "m_completeness4", "m_completeness5", };
@@ -505,6 +543,9 @@ void exportMELAuditForm(String iwhat, int itype)
 						if(dvr != null)
 						{
 							condition_txt += ck + " : " + dvr.get("value1") + ", ";
+							dv = 0.0;
+							try { dv = Float.parseFloat(dvr.get("value1")); } catch (Exception e) { if(dvr.get("value1").equals("WU")) dv = mktpriceval; }
+							totaldiminish += dv;
 						}
 					}
 				}	
@@ -518,6 +559,9 @@ void exportMELAuditForm(String iwhat, int itype)
 		excelInsertString(sheet,rowcount,meladtfields.length+1,"NO SERVICE"); // service column
 		try { condition_txt = condition_txt.substring(0,condition_txt.length()-2); } catch (Exception e) {}
 		excelInsertString(sheet,rowcount,meladtfields.length+2,condition_txt); // conditions column
+
+		excelInsertNumber(sheet,rowcount,meladtfields.length+3, mktprice);
+		excelInsertNumber(sheet,rowcount,meladtfields.length+4, totaldiminish.toString() );
 
 		itemcount++;
 		rowcount++;

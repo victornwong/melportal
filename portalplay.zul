@@ -161,7 +161,7 @@ void doFunc(Object iwhat)
 				<label id="branch_lbl" sclass="k9mo" style="color:#eeeeee" />
 			</div>
 
-			<button id="uplcsgn_b" label="Consignment-notes/Reports" sclass="kbuttm" onClick="doFunc(self)" visible="false" />
+			<button id="uplcsgn_b" label="Consignment-notes/Reports" sclass="kbuttm" onClick="doFunc(self)" />
 			<button id="melgrn_b" label="Goods receival" sclass="kbuttm" onClick="doFunc(self)" />
 			<button id="auditmel_b" label="Audit/Specs update" sclass="kbuttm" onClick="doFunc(self)" />
 
@@ -209,7 +209,7 @@ if(!unm.equals("madmin")) // default panels to load for users
 	*/
 	//reloadWallMod(1);
 
-	if(unm.equals("laikw") || unm.equals("nisha"))
+	if(unm.equals("laikw") || unm.equals("nisha") || unm.equals("chandra"))
 	{
 		uplcsgn_b.setVisible(true);
 	}

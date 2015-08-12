@@ -336,10 +336,12 @@ void sendCsgn_Notif(int itype, String icsgn)
 
 	subj = topeople = msgtext = partn = "";
 	mf = (r.get("usedmelassettag") == null) ? "NO" : ( (r.get("usedmelassettag")) ? "YES" : "NO");
+	shipeta = (r.get("shipmenteta") == null) ? "UNDEFINED" : dtf2.format(r.get("shipmenteta"));
 
 	emsg =
 	"------------------------------------------------------" +
 	"\nMEL CSGN REF      : " + kiboo.checkNullString( r.get("csgn") ) +
+	"\nETA               : " + shipeta +
 	"\nStatus            : " + kiboo.checkNullString( r.get("mstatus") ) +
 	"\nRW warehouse      : " + kiboo.checkNullString( r.get("rwlocation") ) +
 	"\nQty               : " + glob_csgn_qty +
@@ -352,7 +354,7 @@ void sendCsgn_Notif(int itype, String icsgn)
 	switch(itype)
 	{
 		case 1: // csgn commit notif
-			subj = "[COMMITTED] MEL Consignment-note: " + icsgn;
+			subj = "[COMMITTED] MEL Consignment-note: " + icsgn + " (ETA:" + shipeta + ")";
 			topeople = luhand.getLookups_ConvertToStr("MEL_RW_COORD",2,",") + "," + partn;
 			break;
 
@@ -362,7 +364,7 @@ void sendCsgn_Notif(int itype, String icsgn)
 			break;
 
 		case 3: // send test notif
-			subj = "[TESTING] mel consignment-note";
+			subj = "[TESTING] mel consignment-note (ETA:" + shipeta + ")";
 			topeople = "victor@rentwise.com";
 			break;
 
