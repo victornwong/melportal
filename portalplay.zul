@@ -9,13 +9,14 @@
 <zscript>
 <![CDATA[
 MYTITLE = "MEL+RW PORTAL ";
-MYVERSION = "v0.1";
+MYVERSION = "v0.2";
 /*
 New dynamic-menu main screen thing
 Written by Victor Wong
 Dated: 08/10/2011
 
 03/04/2012: optimized and ported byte-compiled
+14/08/2015: abit of requests from Nisha, consider phase 2 works
 
 */
 

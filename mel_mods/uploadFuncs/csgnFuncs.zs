@@ -71,6 +71,7 @@ void rawUploadConsignment()
 
 Object[] csgnasshd =
 {
+	new listboxHeaderWidthObj("origid",false,""),
 	new listboxHeaderWidthObj("Contract #",true,""),
 	new listboxHeaderWidthObj("Serial Number",true,""),
 	new listboxHeaderWidthObj("Asset Number (MEL Ref)",true,""),
@@ -172,6 +173,27 @@ void processConsignmentUpload() // Process the MEL csgn and insert items into ta
 	sqlhand.gpSqlExecuter(sqlstm); // upload mel_csgn.usedmelassettag flag
 }
 
+/**
+ * MEL inventory listbox double-clicker
+ */
+class midclicker implements org.zkoss.zk.ui.event.EventListener
+{
+	public void onEvent(Event event) throws UiException
+	{
+		glob_sel_inventory_obj = event.getTarget();
+		if(glob_sel_inventory_obj != null)
+		{
+			glob_sel_inventory = lbhand.getListcellItemLabel(glob_sel_inventory_obj,0);
+
+			// populate 'em textbox in popup for editing
+			e_serial_no.setValue( lbhand.getListcellItemLabel(glob_sel_inventory_obj,2) );
+			e_mel_asset.setValue( lbhand.getListcellItemLabel(glob_sel_inventory_obj,3) );
+			edititem_pop.open(glob_sel_inventory_obj);
+		}
+	}
+}
+melinvdclik = new midclicker();
+
 void showConsignmentThings()
 {
 	if(csgnasset_holder.getFellowIfAny("csgnassets_lb") != null) csgnassets_lb.setParent(null); // remove prev lb
@@ -182,13 +204,14 @@ void showConsignmentThings()
 		sqlstm = "select * from mel_inventory where parent_id=" + glob_sel_csgn;
 		rcs = sqlhand.gpSqlGetRows(sqlstm);
 		ArrayList kabom = new ArrayList();
-		String[] fl = { "contract_no","serial_no","mel_asset","item_desc","item_type","brand_make","model","sub_type","sub_spec","hdd","ram" };
+		String[] fl = { "origid","contract_no","serial_no","mel_asset","item_desc","item_type","brand_make","model","sub_type","sub_spec","hdd","ram" };
 		for(d : rcs)
 		{
 			ngfun.popuListitems_Data(kabom,fl,d);
 			lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 			kabom.clear();
 		}
+		lbhand.setDoubleClick_ListItems(newlb,melinvdclik);
 	}
 
 	fillDocumentsList(documents_holder,MEL_CSGN_PREFIX,glob_sel_csgn);
@@ -300,9 +323,9 @@ void reallySaveMEL_equiplist()
 	r = sqlhand.gpSqlGetRows(sqlstm);
 	if(r.size() > 0)
 	{
-		//guihand.showMessageBox("ERR: Some of the equipments are already in our database. No duplicates allowed!");
-		alert("ERR: Some of the equipments are already in our database. No duplicates allowed!\n" + r);
-		return;
+		// alert only, but still allow to save 'em uploaded things : 14/08/2015: req by Nisha
+		alert("ERR: Some of the equipments are already in our database. No duplicates allowed but we will go ahead and save them anyway.\n" + r);
+		sendCsgn_Notif(7,glob_sel_csgn); // send notif email
 	}
 
 	sqlstm = "delete from mel_inventory where parent_id=" + glob_sel_csgn;
@@ -338,6 +361,22 @@ void sendCsgn_Notif(int itype, String icsgn)
 	mf = (r.get("usedmelassettag") == null) ? "NO" : ( (r.get("usedmelassettag")) ? "YES" : "NO");
 	shipeta = (r.get("shipmenteta") == null) ? "UNDEFINED" : dtf2.format(r.get("shipmenteta"));
 
+	extranotes = kiboo.checkNullString( r.get("extranotes") ) ;
+	switch(itype)
+	{
+		case 5: // 13/08/2015: req nisha, send notif email when price quotes ready for MEL
+			extranotes = "Quote Completed";
+			break;
+
+		case 6: // 13/08/2015: req nisha, send notif when audit-report ready for MEL
+			extranotes = "Audit Report Completed";
+			break;
+
+		case 7: // 13/08/2015: req nisha, send notif if dups found in consignment upload
+			extranotes = "Duplicates serial-numbers or asset-numbers, etc";
+			break;
+	}
+
 	emsg =
 	"------------------------------------------------------" +
 	"\nMEL CSGN REF      : " + kiboo.checkNullString( r.get("csgn") ) +
@@ -346,7 +385,7 @@ void sendCsgn_Notif(int itype, String icsgn)
 	"\nRW warehouse      : " + kiboo.checkNullString( r.get("rwlocation") ) +
 	"\nQty               : " + glob_csgn_qty +
 	"\nUse MEL asset-tag : " + mf +
-	"\nNotes             : " + kiboo.checkNullString( r.get("extranotes") ) +
+	"\nNotes             : " + extranotes +
 	( (mf.equals("YES")) ? "\n\n**ALERT** This consignment upload is using MEL asset-tags as serial-numbers." : "" ) +
 	"\n\nPlease login to check and process ASAP." +
 	"\n------------------------------------------------------";
@@ -389,6 +428,21 @@ void sendCsgn_Notif(int itype, String icsgn)
 			else
 				msgtext = "ERR: cannot send email, partner email address unavailable..";
 
+			break;
+
+		case 5: // 13/08/2015: req nisha, send notif email when price quotes ready for MEL
+			subj = "[QUOTE COMPLETED] MEL Consignment-note: " + icsgn;
+			topeople = luhand.getLookups_ConvertToStr("MEL_CONTACTS",2,",");
+			break;
+
+		case 6: // 13/08/2015: req nisha, send notif when audit-report ready for MEL
+			subj = "[AUDIT REPORT COMPLETED] MEL Consignment-note: " + icsgn;
+			topeople = luhand.getLookups_ConvertToStr("MEL_CONTACTS",2,",");
+			break;
+
+		case 7: // 13/08/2015: req nisha, send notif if dups found in consignment upload
+			subj = "[DUPLICATES FOUND] MEL Consignment-note: " + icsgn;
+			topeople = luhand.getLookups_ConvertToStr("MEL_CONTACTS",2,",");
 			break;
 	}
 	if(!topeople.equals("")) gmail_sendEmail("", GMAIL_username, GMAIL_password, GMAIL_username, topeople, subj, emsg );

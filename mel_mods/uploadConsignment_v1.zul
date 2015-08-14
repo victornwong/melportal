@@ -14,7 +14,7 @@
 <zscript>
 <![CDATA[
 MYTITLE = "MEL - Consignment Note Management";
-MYVERSION = "v0.1.1";
+MYVERSION = "v0.1.2";
 MYPANEL = "meluplcsgnpanel";
 
 /**
@@ -24,6 +24,8 @@ MYPANEL = "meluplcsgnpanel";
  * @notes
  * 12/01/2015: if snum is NULL, take MEL asset-tag as snum. Also update mel_csgn.usedmelassettag
  * 29/01/2015: req to add mel_csgn.mel_accept flag, MEL can set whether to accept the quote or whatever
+ * 14/08/2015: button to send notif email for audit-report complete and quotation-done - req by Nisha
+ * 14/08/2015: add MEL inventory item popup-editor, user can change serial-no, mel-asset, proc-type, proc-speed - req by Nisha
  */
 import java.util.*;
 import java.text.*;
@@ -49,9 +51,10 @@ gridhand = new GridHandler(); ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 MEL_CSGN_PREFIX = "MEL";
 
 Object csgn_upload_data = null;
-csgn_sel_item = null;
+csgn_sel_item = glob_sel_inventory_obj = null;
 last_list_csgn = 0;
 glob_sel_csgn = glob_csgn_stat = glob_sel_melcsgn = glob_sel_loca = glob_sel_notes = glob_csgn_qty = "";
+glob_sel_inventory = "";
 
 String JN_linkcode()
 {
@@ -149,6 +152,29 @@ void doFunc(String itype)
 		add_RWAuditLog(JN_linkcode(),"", "Sent notification email to partner", unm);
 	}
 
+	if(itype.equals("notifmelprice_b")) // 13/08/2015: req nisha, send notif email when price quotes ready for MEL
+	{
+		sendCsgn_Notif(5,glob_sel_csgn);
+		add_RWAuditLog(JN_linkcode(),"", "Sent notification email to MEL for price quotes", unm);
+	}
+
+	if(itype.equals("notifreport_b")) // 13/08/2015: req nisha, send notif when audit-report ready for MEL
+	{
+		sendCsgn_Notif(6,glob_sel_csgn);
+		add_RWAuditLog(JN_linkcode(),"", "Sent notification email to MEL for audit-report ready", unm);
+	}
+
+	if(itype.equals("notifdups_b")) // 13/08/2015: req nisha, send notif if dups found in consignment upload
+	{
+		sendCsgn_Notif(7,glob_sel_csgn);
+		add_RWAuditLog(JN_linkcode(),"", "Sent notification email to MEL for duplicates in consignment", unm);
+	}
+
+	if(itype.equals("genpricing_b")) // 14/08/2015: try to generate items prices if proc-type and proc-speed was set properly
+	{
+
+	}
+
 	if(!sqlstm.equals(""))
 	{
 		sqlhand.gpSqlExecuter(sqlstm);
@@ -218,6 +244,50 @@ void popuCsgnMeta()
 	m_csgn.setValue( kiboo.checkNullString(r.get("csgn")) );
 	if(r.get("shipmenteta") != null) m_shipmenteta.setValue( r.get("shipmenteta") );
 	m_extranotes.setValue( kiboo.checkNullString(r.get("extranotes")) );
+}
+
+/**
+ * [updMELinventory description]
+ * @param iwhat button ID to see what to update
+ */
+void updMELinventory(String iwhat)
+{
+	edititem_pop.close();
+	if(glob_sel_inventory.equals("")) return;
+	uptval = upsql = "";
+
+	try
+	{
+		if(iwhat.equals("e_upd_serial_no"))
+		{
+			uptval = kiboo.replaceSingleQuotes(e_serial_no.getValue()).trim();
+			upsql = "serial_no='" + uptval + "'";
+		}
+
+		if(iwhat.equals("e_upd_mel_asset"))
+		{
+			uptval = kiboo.replaceSingleQuotes(e_mel_asset.getValue()).trim();
+			upsql = "mel_asset='" + uptval + "'";
+		}
+
+		if(iwhat.equals("e_upd_sub_type"))
+		{
+			uptval = e_sub_type.getSelectedItem().getLabel();
+			upsql = "sub_type='" + uptval + "'";
+		}
+
+		if(iwhat.equals("e_upd_sub_spec"))
+		{
+			uptval = e_sub_spec.getSelectedItem().getLabel();
+			upsql = "sub_spec='" + uptval + "'";
+		}
+	} catch (Exception e) {}
+
+	if(uptval.equals("")) return;
+
+	sqlstm = "update mel_inventory set " + upsql + " where origid=" + glob_sel_inventory;
+	sqlhand.gpSqlExecuter(sqlstm);
+	showConsignmentThings(); // refresh - slow if consignment alot of items
 }
 
 ]]>
@@ -290,6 +360,11 @@ void popuCsgnMeta()
 <popup id="rwcoordpop">
 	<div sclass="shadowbox" style="background:#2279D5">
 		<vbox>
+			<button id="genpricing_b" label="Generate temporary prices for items" sclass="k9mo" onClick="doFunc(self.getId())" />
+			<button id="notifmelprice_b" label="Notify MEL prices completed" sclass="k9mo" onClick="doFunc(self.getId())" />
+			<button id="notifreport_b" label="Notify MEL report committed" sclass="k9mo" onClick="doFunc(self.getId())" />
+			<button id="notifdups_b" label="Notify MEL on duplicates consigment items" sclass="k9mo" onClick="doFunc(self.getId())" />
+			<separator bar="true" />
 			<button id="notifypart_b" label="Re-notify partner" sclass="k9mo" onClick="doFunc(self.getId())" />
 			<button id="shwauditlogs_b" label="Show audit-log" sclass="k9mo" onClick="adminFunc(self.getId())" />
 			<separator bar="true" />
@@ -332,6 +407,35 @@ void popuCsgnMeta()
 			<button label="Close" sclass="k9" onClick="updatefiledesc_popup.close()" />
 		</hbox>
 	</groupbox>
+</popup>
+
+<popup id="edititem_pop">
+	<div sclass="shadowbox" style="background:#2279D5" width="400px">
+		<grid sclass="GridLayoutNoBorder">
+			<rows>
+				<row style="background:#2279D5">
+					<label sclass="k9b" value="Serial No." />
+					<textbox id="e_serial_no" sclass="k9" />
+					<button id="e_upd_serial_no" sclass="k9" label="Update" onClick="updMELinventory(self.getId())" />
+				</row>
+				<row style="background:#2279D5">
+					<label sclass="k9b" value="MEL Ref Asset No." />
+					<textbox id="e_mel_asset" sclass="k9" />
+					<button id="e_upd_mel_asset" sclass="k9" label="Update" onClick="updMELinventory(self.getId())" />
+				</row>
+				<row style="background:#2279D5">
+					<label sclass="k9b" value="Proc / Monitor Type" />
+					<listbox id="e_sub_type" sclass="k9" mold="select" />
+					<button id="e_upd_sub_type" sclass="k9" label="Update" onClick="updMELinventory(self.getId())" />
+				</row>
+				<row style="background:#2279D5">
+					<label sclass="k9b" value="P.Speed / M.Size" />
+					<listbox id="e_sub_spec" sclass="k9" mold="select" />
+					<button id="e_upd_sub_spec" sclass="k9" label="Update" onClick="updMELinventory(self.getId())" />
+				</row>
+			</rows>
+		</grid>
+	</div>
 </popup>
 
 <style src="/real-world.css" />
@@ -410,6 +514,9 @@ void popuCsgnMeta()
 <![CDATA[
 
 luhand.populateListbox_ByLookup(p_location, "MEL_PARTNER_LOCATION", 2);
+
+luhand.populateListbox_ByLookup(e_sub_type, "MEL_PROCESSOR", 2);
+luhand.populateListbox_ByLookup(e_sub_spec, "MEL_PROCESSOR_SPEED", 2);
 
 if(sechand.allowedUser(useraccessobj.username,"MEL_RW_COORD_USERS"))
 {
