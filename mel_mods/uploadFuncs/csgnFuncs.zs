@@ -71,19 +71,20 @@ void rawUploadConsignment()
 
 Object[] csgnasshd =
 {
-	new listboxHeaderWidthObj("origid",false,""),
 	new listboxHeaderWidthObj("Contract #",true,""),
 	new listboxHeaderWidthObj("Serial Number",true,""),
 	new listboxHeaderWidthObj("Asset Number (MEL Ref)",true,""),
 	new listboxHeaderWidthObj("Item Description",true,""),
 	new listboxHeaderWidthObj("Asset Category",true,""),
-	new listboxHeaderWidthObj("Make",true,""),
+	new listboxHeaderWidthObj("Make",true,""), // 5
 	new listboxHeaderWidthObj("Model",true,""),
 	new listboxHeaderWidthObj("Processor Or Monitor Type",true,""),
 	new listboxHeaderWidthObj("Processor Speed Or Monitor Size",true,""),
 	new listboxHeaderWidthObj("HDD Size",true,""),
-	new listboxHeaderWidthObj("RAM",true,""),
+	new listboxHeaderWidthObj("RAM",true,""), // 10
+	new listboxHeaderWidthObj("origid",false,""),
 };
+ITEM_ORIGID = 11;
 
 void processConsignmentUpload() // Process the MEL csgn and insert items into table
 {
@@ -180,14 +181,21 @@ class midclicker implements org.zkoss.zk.ui.event.EventListener
 {
 	public void onEvent(Event event) throws UiException
 	{
+		unm = useraccessobj.username;
+		// 17/08/2015: req by Lai, only MEL can modify serial-no and mel-assettag
+		if(!unm.equals("madmin"))
+		{
+			if(!unm.equals("meluser")) return;
+		}
+
 		glob_sel_inventory_obj = event.getTarget();
 		if(glob_sel_inventory_obj != null)
 		{
-			glob_sel_inventory = lbhand.getListcellItemLabel(glob_sel_inventory_obj,0);
+			glob_sel_inventory = lbhand.getListcellItemLabel(glob_sel_inventory_obj,ITEM_ORIGID);
 
 			// populate 'em textbox in popup for editing
-			e_serial_no.setValue( lbhand.getListcellItemLabel(glob_sel_inventory_obj,2) );
-			e_mel_asset.setValue( lbhand.getListcellItemLabel(glob_sel_inventory_obj,3) );
+			e_serial_no.setValue( lbhand.getListcellItemLabel(glob_sel_inventory_obj,1) );
+			e_mel_asset.setValue( lbhand.getListcellItemLabel(glob_sel_inventory_obj,2) );
 			edititem_pop.open(glob_sel_inventory_obj);
 		}
 	}
@@ -203,8 +211,9 @@ void showConsignmentThings()
 		Listbox newlb = lbhand.makeVWListbox_Width(csgnasset_holder, csgnasshd, "csgnassets_lb", 20);
 		sqlstm = "select * from mel_inventory where parent_id=" + glob_sel_csgn;
 		rcs = sqlhand.gpSqlGetRows(sqlstm);
+		newlb.setMultiple(true); newlb.setCheckmark(true);
 		ArrayList kabom = new ArrayList();
-		String[] fl = { "origid","contract_no","serial_no","mel_asset","item_desc","item_type","brand_make","model","sub_type","sub_spec","hdd","ram" };
+		String[] fl = { "contract_no","serial_no","mel_asset","item_desc","item_type","brand_make","model","sub_type","sub_spec","hdd","ram","origid" };
 		for(d : rcs)
 		{
 			ngfun.popuListitems_Data(kabom,fl,d);
@@ -324,7 +333,21 @@ void reallySaveMEL_equiplist()
 	if(r.size() > 0)
 	{
 		// alert only, but still allow to save 'em uploaded things : 14/08/2015: req by Nisha
-		alert("ERR: Some of the equipments are already in our database. No duplicates allowed but we will go ahead and save them anyway.\n" + r);
+		alert("ERR: Some of the equipments are already in our database. No duplicates allowed but we will go ahead and save them anyway.\n");
+
+		// save dups into mel_csgn.dups_text to be used later in notif email
+		dups_text = "";
+		for(dd : r)
+		{
+			dups_text += "contract: " + kiboo.checkNullString(dd.get("contract_no")) +
+			" serial-no: " + kiboo.checkNullString(dd.get("serial_no")) +
+			" mel-assettag: " + kiboo.checkNullString(dd.get("mel_asset")) +
+			" csgn: " + kiboo.checkNullString(dd.get("csgn")) + "\n";
+		}
+
+		sqlstm = "update mel_csgn set dups_text='" + dups_text + "' where origid=" + glob_sel_csgn + ";";
+		sqlhand.gpSqlExecuter(sqlstm);
+
 		sendCsgn_Notif(7,glob_sel_csgn); // send notif email
 	}
 
@@ -442,7 +465,12 @@ void sendCsgn_Notif(int itype, String icsgn)
 
 		case 7: // 13/08/2015: req nisha, send notif if dups found in consignment upload
 			subj = "[DUPLICATES FOUND] MEL Consignment-note: " + icsgn;
-			topeople = luhand.getLookups_ConvertToStr("MEL_CONTACTS",2,",");
+			//topeople = luhand.getLookups_ConvertToStr("MEL_CONTACTS",2,",");
+
+			topeople = "victor@rentwise.com,laikw@rentwise.com";
+			dups_text = (r.get("dups_text") != null) ? sqlhand.clobToString(r.get("dups_text")) : "";
+			emsg += "\n\nDuplicates:\n" + dups_text;
+
 			break;
 	}
 	if(!topeople.equals("")) gmail_sendEmail("", GMAIL_username, GMAIL_password, GMAIL_username, topeople, subj, emsg );

@@ -20,13 +20,13 @@ String[] mbtn = {
 };
 
 String[] mctype = {
-"lb", "tb", "tb", "tb", "lb", "lb", "tb", "lb",
+"lb", "tb", "lb", "tb", "lb", "lb", "tb", "lb",
 "lb", "tb", "tb", "tb", "tb", "lb", "tb", "lb",
 "lb", "lb", "lb",
 };
 
 String[] mclookup = {
-"", "", "", "", "MEL_PROCESSOR", "MEL_PROCESSOR_SPEED", "", "MEL_ADT_CASECOLOR",
+"", "", "MEL_ITEM_TYPE", "", "MEL_PROCESSOR", "MEL_PROCESSOR_SPEED", "", "MEL_ADT_CASECOLOR",
 "MEL_ADT_FORMFACTOR", "", "", "", "", "MEL_ADT_MEDIADRIVES", "", "YESNO_DEF",
 "YESNO_DEF","YESNO_DEF","YESNO_DEF",
 };

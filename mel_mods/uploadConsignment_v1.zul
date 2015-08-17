@@ -26,6 +26,7 @@ MYPANEL = "meluplcsgnpanel";
  * 29/01/2015: req to add mel_csgn.mel_accept flag, MEL can set whether to accept the quote or whatever
  * 14/08/2015: button to send notif email for audit-report complete and quotation-done - req by Nisha
  * 14/08/2015: add MEL inventory item popup-editor, user can change serial-no, mel-asset, proc-type, proc-speed - req by Nisha
+ * 17/08/2015: export raw Excel temporary pricing by proc-spec/speed set by coordinator
  */
 import java.util.*;
 import java.text.*;
@@ -172,7 +173,7 @@ void doFunc(String itype)
 
 	if(itype.equals("genpricing_b")) // 14/08/2015: try to generate items prices if proc-type and proc-speed was set properly
 	{
-
+		generateTempPricing();
 	}
 
 	if(!sqlstm.equals(""))
@@ -182,6 +183,60 @@ void doFunc(String itype)
 	}
 
 	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
+}
+
+/**
+ * Generate temporary pricing of the uploaded consignment items according to proc-spec/speed set by coordinator
+ * No grouping, just export per item and price per row ONLY - raw export
+ */
+void generateTempPricing()
+{
+	if(glob_sel_csgn.equals("")) return;
+
+	String[] colhds = { "Contract","Serial Number","Asset Number (MEL Ref)","Item Description",
+	"Asset Category","Make","Model","Processor Or Monitor Type","Processor Speed Or Monitor Size","HDD Size","RAM","PRICE" };
+
+	String[] flds = { "contract_no", "serial_no", "mel_asset", "item_desc", "item_type", "brand_make", "model", "sub_type", "sub_spec", "hdd", "ram" };
+
+	sqlstm = "select * from mel_inventory where parent_id=" + glob_sel_csgn;
+	r = sqlhand.gpSqlGetRows(sqlstm);
+
+	HSSFWorkbook excelWB = new HSSFWorkbook();
+	evaluator = excelWB.getCreationHelper().createFormulaEvaluator();
+	HSSFSheet sheet = excelWB.createSheet("price_CSGN" + glob_sel_csgn);
+
+	for(i=0;i<colhds.length;i++)
+	{
+		excelInsertString(sheet,0,i,colhds[i]);
+	}
+
+	rowcount = 1;
+
+	for(d : r)
+	{
+		for(i=0;i<flds.length;i++)
+		{
+			excelInsertString(sheet,rowcount,i, kiboo.checkNullString(d.get(flds[i])) );
+		}
+
+		pbitm = kiboo.checkNullString(d.get("sub_type")).trim() + " " + kiboo.checkNullString(d.get("sub_spec")).trim();
+		digsql = "select top 1 price from rw_mktpricebook where category='MEL' and itemname='" + pbitm + "';";
+		mpr = sqlhand.gpSqlFirstRow(digsql);
+		itemprice = "0";
+		if(mpr != null)
+		{
+			itemprice = mpr.get("price").toString();
+		}
+		excelInsertString(sheet,rowcount,i,itemprice);
+
+		rowcount++;
+	}
+
+	outfn = session.getWebApp().getRealPath("tmp/meltempprice.xls");
+	FileOutputStream fileOut = new FileOutputStream(outfn);
+	excelWB.write(fileOut);
+	fileOut.close();
+	downloadFile(kasiexport,"meltempprice.xls",outfn);
 }
 
 void adminFunc(String itype)
@@ -254,7 +309,7 @@ void updMELinventory(String iwhat)
 {
 	edititem_pop.close();
 	if(glob_sel_inventory.equals("")) return;
-	uptval = upsql = "";
+	uptval = upsql = mpfsql = "";
 
 	try
 	{
@@ -281,11 +336,43 @@ void updMELinventory(String iwhat)
 			uptval = e_sub_spec.getSelectedItem().getLabel();
 			upsql = "sub_spec='" + uptval + "'";
 		}
+
 	} catch (Exception e) {}
 
 	if(uptval.equals("")) return;
 
 	sqlstm = "update mel_inventory set " + upsql + " where origid=" + glob_sel_inventory;
+	sqlhand.gpSqlExecuter(sqlstm);
+	showConsignmentThings(); // refresh - slow if consignment alot of items
+}
+
+void consignmentMPF(String iwhat)
+{
+	mpfpop.close();
+	if(csgnasset_holder.getFellowIfAny("csgnassets_lb") == null) return; // no consignment LB, ret
+	ks = csgnassets_lb.getSelectedItems().toArray();
+	if(ks.length == 0) return;
+	invts = "";
+
+	for(i=0;i<ks.length;i++)
+	{
+		invts += lbhand.getListcellItemLabel(ks[i],ITEM_ORIGID) + ",";
+	}
+	try { invts = invts.substring(0,invts.length()-1); } catch (Exception e) {}
+
+	upsql = "";
+
+	if(iwhat.equals("m_upd_sub_type"))
+	{
+		upsql = "set sub_type='" + m_sub_type.getSelectedItem().getLabel() + "'";
+	}
+
+	if(iwhat.equals("m_upd_sub_spec"))
+	{
+		upsql = "set sub_spec='" + m_sub_spec.getSelectedItem().getLabel() + "'";
+	}
+
+	sqlstm = "update mel_inventory " + upsql + " where origid in (" + invts + ");";
 	sqlhand.gpSqlExecuter(sqlstm);
 	showConsignmentThings(); // refresh - slow if consignment alot of items
 }
@@ -438,6 +525,25 @@ void updMELinventory(String iwhat)
 	</div>
 </popup>
 
+<popup id="mpfpop">
+	<div sclass="shadowbox" style="background:#2279D5" width="400px">
+		<grid sclass="GridLayoutNoBorder">
+			<rows>
+				<row style="background:#2279D5">
+					<label sclass="k9b" value="Proc / Monitor Type" />
+					<listbox id="m_sub_type" sclass="k9" mold="select" />
+					<button id="m_upd_sub_type" sclass="k9" label="Update" onClick="consignmentMPF(self.getId())" />
+				</row>
+				<row style="background:#2279D5">
+					<label sclass="k9b" value="P.Speed / M.Size" />
+					<listbox id="m_sub_spec" sclass="k9" mold="select" />
+					<button id="m_upd_sub_spec" sclass="k9" label="Update" onClick="consignmentMPF(self.getId())" />
+				</row>
+			</rows>
+		</grid>
+	</div>
+</popup>
+
 <style src="/real-world.css" />
 <style>
 	.GridLayoutNoBorder tr.z-row td.z-row-inner, tr.z-row .z-cell, div.z-grid
@@ -490,6 +596,7 @@ void updMELinventory(String iwhat)
 		<separator width="10px" />
 		<button id="uplassets_b" label="Upload XLS" sclass="k9mo" onClick="rawUploadConsignment()" />
 		<button id="savelist_b" label="Save equipments list" sclass="k9mo" onClick="doFunc(self.getId())" />
+		<button label="MPF" sclass="k9mo" onClick="mpfpop.open(self)" />
 	</hbox>
 	<separator height="3px" />
 	<div id="csgnasset_holder" />
@@ -508,6 +615,7 @@ void updMELinventory(String iwhat)
 		<div id="documents_holder" />
 	</div>
 
+	<div id="kasiexport" visible="false" />
 </div>
 
 <zscript>
@@ -517,6 +625,9 @@ luhand.populateListbox_ByLookup(p_location, "MEL_PARTNER_LOCATION", 2);
 
 luhand.populateListbox_ByLookup(e_sub_type, "MEL_PROCESSOR", 2);
 luhand.populateListbox_ByLookup(e_sub_spec, "MEL_PROCESSOR_SPEED", 2);
+
+luhand.populateListbox_ByLookup(m_sub_type, "MEL_PROCESSOR", 2);
+luhand.populateListbox_ByLookup(m_sub_spec, "MEL_PROCESSOR_SPEED", 2);
 
 if(sechand.allowedUser(useraccessobj.username,"MEL_RW_COORD_USERS"))
 {

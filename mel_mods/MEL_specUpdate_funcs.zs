@@ -465,6 +465,8 @@ void exportMELAuditForm(String iwhat, int itype)
 					dv = 0.0;
 					try { dv = Float.parseFloat(dvr.get("value1")); } catch (Exception e) { if(dvr.get("value1").equals("WU")) dv = mktpriceval; }
 					totaldiminish += dv;
+
+					debugbox.setValue(condition_txt + " : " + dv.toString() + "\n" + debugbox.getValue());
 				}
 
 				String[] mops = { "m_operability2", "m_operability3", "m_operability4", "m_operability5" };
@@ -481,6 +483,8 @@ void exportMELAuditForm(String iwhat, int itype)
 							dv = 0.0;
 							try { dv = Float.parseFloat(dvr.get("value1")); } catch (Exception e) { if(dvr.get("value1").equals("WU")) dv = mktpriceval; }
 							totaldiminish += dv;
+
+							debugbox.setValue(condition_txt + " : " + dv.toString() + "\n" + debugbox.getValue());
 						}
 					}
 				}
@@ -493,10 +497,13 @@ void exportMELAuditForm(String iwhat, int itype)
 				dvr = getLookup_valuefield(katu,1);
 				if(dvr != null)
 				{
-					condition_txt += katu + " : " + dvr.get("value1") + ",";
+					condition_txt += katu + " : " + dvr.get("value1") + ", ";
 					dv = 0.0;
 					try { dv = Float.parseFloat(dvr.get("value1")); } catch (Exception e) { if(dvr.get("value1").equals("WU")) dv = mktpriceval; }
 					totaldiminish += dv;
+
+					debugbox.setValue(condition_txt + " : " + dv.toString() + "\n" + debugbox.getValue());
+
 				}
 
 				String[] mops = { "m_appearance2", "m_appearance3", "m_appearance4", "m_appearance5" };
@@ -514,9 +521,10 @@ void exportMELAuditForm(String iwhat, int itype)
 							try { dv = Float.parseFloat(dvr.get("value1")); } catch (Exception e) { if(dvr.get("value1").equals("WU")) dv = mktpriceval; }
 							totaldiminish += dv;
 
+							debugbox.setValue(condition_txt + " : " + dv.toString() + "\n" + debugbox.getValue());
 						}
 					}
-				}	
+				}
 			}
 			else
 			if( meladtfields[i].equals("m_completeness") )
@@ -526,10 +534,12 @@ void exportMELAuditForm(String iwhat, int itype)
 				dvr = getLookup_valuefield(katu,1);
 				if(dvr != null)
 				{
-					condition_txt += katu + " : " + dvr.get("value1") + ",";
+					condition_txt += katu + " : " + dvr.get("value1") + ", ";
 					dv = 0.0;
 					try { dv = Float.parseFloat(dvr.get("value1")); } catch (Exception e) { if(dvr.get("value1").equals("WU")) dv = mktpriceval; }
 					totaldiminish += dv;
+
+					debugbox.setValue(condition_txt + " : " + dv.toString() + "\n" + debugbox.getValue());
 				}
 
 				String[] mops = { "m_completeness2", "m_completeness3", "m_completeness4", "m_completeness5", };
@@ -546,9 +556,11 @@ void exportMELAuditForm(String iwhat, int itype)
 							dv = 0.0;
 							try { dv = Float.parseFloat(dvr.get("value1")); } catch (Exception e) { if(dvr.get("value1").equals("WU")) dv = mktpriceval; }
 							totaldiminish += dv;
+
+							debugbox.setValue(condition_txt + " : " + dv.toString() + "\n" + debugbox.getValue());
 						}
 					}
-				}	
+				}
 			}
 			else
 			{
@@ -557,11 +569,16 @@ void exportMELAuditForm(String iwhat, int itype)
 			excelInsertString(sheet,rowcount,i+1,kk);
 		}
 		excelInsertString(sheet,rowcount,meladtfields.length+1,"NO SERVICE"); // service column
-		try { condition_txt = condition_txt.substring(0,condition_txt.length()-2); } catch (Exception e) {}
+		//try { condition_txt = condition_txt.substring(0,condition_txt.length()-2); } catch (Exception e) {}
 		excelInsertString(sheet,rowcount,meladtfields.length+2,condition_txt); // conditions column
 
 		excelInsertNumber(sheet,rowcount,meladtfields.length+3, mktprice);
 		excelInsertNumber(sheet,rowcount,meladtfields.length+4, totaldiminish.toString() );
+
+		finalprice = mktpriceval - totaldiminish;
+		if( finalprice < 0) finalprice = 0.0;
+
+		excelInsertNumber(sheet,rowcount,meladtfields.length+5, finalprice.toString() );
 
 		itemcount++;
 		rowcount++;

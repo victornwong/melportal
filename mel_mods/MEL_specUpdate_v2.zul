@@ -619,6 +619,8 @@ void showCSGN_breakdown(String icsgn)
 <panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true" onClose="panel_Close()">
 <panelchildren style="background:#B0460E">
 
+	<label id="debugbox" multiline="true" height="100px" visible="false" />
+
 	<div sclass="shadowbox" style="background:#3E436B">
 		<hbox style="padding:3px">
 			<label value="Start date" sclass="k9b" />
