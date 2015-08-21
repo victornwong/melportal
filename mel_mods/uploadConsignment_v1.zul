@@ -566,6 +566,8 @@ void consignmentMPF(String iwhat)
 		<button label="Load CSGN" sclass="k9mo" onClick="loadCSGN(1)" />
 		<listbox id="p_location" mold="select" sclass="k9" />
 		<button label="by location" sclass="k9mo" onClick="loadCSGN(2)" />
+		<textbox id="bycsgn_tb" sclass="k9" width="60px" />
+		<button label="by CSGN" sclass="k9mo" onClick="loadCSGN(3)" />
 		<separator width="20px" />
 		<button id="admin_b" label="ADMIN" sclass="k9mo" style="color:#DE1515" onClick="adminpop.open(self)" visible="false" />
 	</hbox>

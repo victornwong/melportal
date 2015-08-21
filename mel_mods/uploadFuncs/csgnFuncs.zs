@@ -264,6 +264,11 @@ class csgnlbClick implements org.zkoss.zk.ui.event.EventListener
 }
 csgnclkier = new csgnlbClick();
 
+/**
+ * [loadCSGN description]
+ * 21/08/2015: added list by CSGN no.
+ * @param itype list type, check switch block
+ */
 void loadCSGN(int itype)
 {
 	last_list_csgn = itype;
@@ -284,6 +289,11 @@ void loadCSGN(int itype)
 			break;
 		case 2: // by partner location
 			sqlstm += "where mn.rwlocation='" + loca + "'";
+			break;
+		case 3: // by csgn no.
+			ckk = kiboo.replaceSingleQuotes(bycsgn_tb.getValue().trim());
+			if(ckk.equals("")) return;
+			try { kkc = Integer.parseInt(ckk); sqlstm += "where mn.origid=" + ckk; } catch (Exception e) { return; }
 			break;
 	}
 
