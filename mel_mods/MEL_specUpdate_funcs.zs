@@ -28,6 +28,10 @@ void toggButts_specupdate(boolean iwhat)
 	}
 }
 
+/**
+ * get asset-tags from audit items listbox - column 1
+ * @return all the asset-tags from column 1 in quote-comma format
+ */
 String getAssetTagsFromListbox()
 {
 	ret_assettags = "";
@@ -37,7 +41,7 @@ String getAssetTagsFromListbox()
 	jk = audititems_lb.getItems().toArray();
 	for(i=0;i<jk.length;i++)
 	{
-		atg = lbhand.getListcellItemLabel(jk[i],0);
+		atg = lbhand.getListcellItemLabel(jk[i],1);
 		if(!atg.equals("")) ret_assettags += "'" + atg + "',";
 	}
 	try { ret_assettags = ret_assettags.substring(0,ret_assettags.length()-1); return ret_assettags; } catch (Exception e) { return ""; }
