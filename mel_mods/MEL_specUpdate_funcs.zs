@@ -445,8 +445,7 @@ void exportMELAuditForm(String iwhat, int itype)
 
 		if(!pbitm.equals("")) // dig market-price only if name got
 		{
-			digsql = "select top 1 price from rw_mktpricebook where category='MEL' and eqtype='" + itmtype + "' and " +
-			"itemname='" + pbitm + "';";
+			digsql = "select top 1 price from rw_mktpricebook where category='MEL' and itemname='" + pbitm + "';";
 			mpr = sqlhand.gpSqlFirstRow(digsql);
 			if(mpr != null) // found something - insert into worksheet
 			{
