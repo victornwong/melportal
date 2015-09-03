@@ -118,11 +118,13 @@ void grnFunc(String itype)
 
 	if(itype.equals("commgrn_b")) // commit MEL-GRN
 	{
+		/*
 		if(!glob_sel_unknown.equals("")) // got unknown unresolved serial-numbers
 		{
 			msgtext = "ERR: there are unknown serial-numbers, please resolve them to commit this MELGRN";
 		}
 		else
+		*/
 		if(glob_sel_stat.equals("DRAFT"))
 		{
 			r = getMELGRN_rec(glob_sel_grn);
@@ -384,7 +386,7 @@ void adminFunc(String itype)
 					<button id="saveimpd_b" label="Save/link equips to consignment and batch" sclass="k9mo" onClick="grnFunc(self.getId())" />
 					<button id="rediginvt_b" label="Re-dig MEL inventory" sclass="k9mo" onClick="grnFunc(self.getId())" />
 					<button id="notifprob_b" label="NOTIFY on UNKNOWN equips" sclass="k9mo" onClick="notifyUnknownSerials(glob_sel_grn)" />
-					<button id="admdelequip_b" label="REMOVE" sclass="k9mo" visible="false" onClick="adminFunc(self.getId())" />
+					<button id="admdelequip_b" label="REMOVE" sclass="k9mo" visible="true" onClick="adminFunc(self.getId())" />
 				</hbox>
 			</vbox>
 		</hbox>

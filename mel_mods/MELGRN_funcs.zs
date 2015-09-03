@@ -3,7 +3,7 @@ import org.victor.*;
 
 void toggButts(boolean iwhat)
 {
-	Object[] bb = { saveimpd_b, rediginvt_b, notifprob_b, savemelgrn_b, impsnums_b };
+	Object[] bb = { saveimpd_b, rediginvt_b, notifprob_b, savemelgrn_b, impsnums_b, admdelequip_b };
 	for(i=0;i<bb.length;i++)
 	{
 		bb[i].setDisabled(iwhat);
@@ -199,6 +199,7 @@ void show_MELGRN(int itype)
 
 Object[] csgnasshd = // knockoff csgnFuncs.zs
 {
+	new listboxHeaderWidthObj("No.",true,"50px"),
 	new listboxHeaderWidthObj("Serial Number",true,""),
 	new listboxHeaderWidthObj("RW AssTag",true,""),
 	new listboxHeaderWidthObj("CSGN",true,""),
@@ -242,6 +243,8 @@ void importParse_MEL_snums(String isn, String icsgn)
 			if(!hm.containsKey(kns[i+1])) // make sure no dups
 			{
 				sty = "";
+				kabom.add((scancount+1).toString() + "."); // 03/09/2015: numbering
+
 				kabom.add(kns[i+1]);
 				kabom.add(kns[i]);
 
