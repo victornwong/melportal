@@ -18,14 +18,15 @@
 MYTITLE = "MEL - Goods Receival";
 MYVERSION = "v0.1.1";
 MYPANEL = "melgrnthingpael";
-/*
-@Title MEL goods receival
-@Author Victor Wong
-@Since 31/12/2014
-@Notes
-Some codes knockoff from goodsReceive_v2 ..
-
-*/
+/**
+ * @title MEL goods receival
+ * @author Victor Wong
+ * @since 31/12/2014
+ * Some codes knockoff from goodsReceive_v2 ..
+ * 07/09/2015: Lai req, unknown serial-nums, still flow in - insert into mel_inventory but with mel_inventory.unknown flag set
+ * 	changes made to MELGRN_funcs.notifyUnknownSerials() to get unknowns by mel_inventory.unknown instead of mel_grn.unknown_snums
+ * 	new MELGRN_funcs.injectUnknownSerialNumbers() added to inject unknowns into mel_inventory
+ */
 import java.util.*;
 import java.text.*;
 import org.victor.*;
@@ -38,11 +39,13 @@ kiboo = new Generals(); sqlhand = new SqlFuncs(); lbhand = new ListboxHandler();
 guihand = new GuiFuncs(); luhand = new LookupFuncs(); dmshand = new DMSFuncs();
 gridhand = new GridHandler(); ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 
-PARSE_SNUM_POS = 0; // posi to MELGRN_funcs.csgnasshd
-PARSE_ASSETTAG_POS = 1;
-PARSE_CSGN_NO_POS = 2;
-PARSE_ITEMDESC_POS = 5;
-PARSE_DATERECEIVED_POS = 14;
+TESTING_MODE = true; // testing mode TRUE, some funcs will do different things 
+
+PARSE_SNUM_POS = 1; // posi to MELGRN_funcs.csgnasshd
+PARSE_ASSETTAG_POS = 2;
+PARSE_CSGN_NO_POS = 3;
+PARSE_ITEMDESC_POS = 6;
+PARSE_DATERECEIVED_POS = 15;
 
 MELGRN_PREFIX = "MELGRN";
 
@@ -120,16 +123,21 @@ void grnFunc(String itype)
 	{
 		/*
 		if(!glob_sel_unknown.equals("")) // got unknown unresolved serial-numbers
-		{
 			msgtext = "ERR: there are unknown serial-numbers, please resolve them to commit this MELGRN";
-		}
-		else
 		*/
 		if(glob_sel_stat.equals("DRAFT"))
 		{
 			r = getMELGRN_rec(glob_sel_grn);
 			if(r == null) { guihand.showMessageBox("ERR: cannot access MELGRN record.."); return; }
-			if(r.get("unknown_snums") != null) { guihand.showMessageBox("ERR: unknown serial-numbers found, cannot commit.."); return; }
+			// original control, if unknown snums found, cannot commit
+			// if(r.get("unknown_snums") != null) { guihand.showMessageBox("ERR: unknown serial-numbers found, cannot commit.."); return; }
+			// 07/09/2015: Laq req, still can commit if unknown snums. Need to inject and link unknown snums to csgn
+			ers = injectUnknownSerialNumbers(r);
+			if(!ers.equals("")) // something wrong with err string return
+			{
+				guihand.showMessageBox(ers);
+				return;
+			}
 
 			if(Messagebox.show("Once MELGRN committed, no more changes..", "Are you sure?",
 				Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) != Messagebox.YES) return;
@@ -140,8 +148,11 @@ void grnFunc(String itype)
 			sqlstm = "update mel_grn set gstatus='COMMIT', commitdate='" + todaydate + "', commituser='" + unm + "' where origid=" + glob_sel_grn + ";";
 			sqlstm += commit_GRN_equips(glob_sel_grn, glob_sel_batchno);
 
-			add_RWAuditLog(lnkc,"", "Commit MELGRN: " + glob_sel_grn, unm);
-			notifyCommitMELGRN(glob_sel_grn);
+			if(!TESTING_MODE) // not in testing-mode, insert audit-logs and send email notif
+			{
+				add_RWAuditLog(lnkc,"", "Commit MELGRN: " + glob_sel_grn, unm);
+				notifyCommitMELGRN(glob_sel_grn);
+			}
 		}
 		else
 		{
@@ -323,7 +334,6 @@ void adminFunc(String itype)
 <div width="1200px">
 <panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true" >
 <panelchildren style="background:#0C203E">
-
 	<div sclass="shadowbox" style="background:#3E436B">
 	<label id="debuglabel" multiline="true" />
 		<hbox>
@@ -344,6 +354,7 @@ void adminFunc(String itype)
 			<button id="newgrn_b" label="New MELGRN" sclass="k9mo" onClick="grnFunc(self.getId())" />
 			<button id="commgrn_b" label="Commit" sclass="k9mo" onClick="grnFunc(self.getId())" />
 			<button id="cancelgrn_b" label="Cancel" sclass="k9mo" style="color:#DB3535" onClick="grnFunc(self.getId())" />
+			<button id="notifprob_b" label="NOTIFY on UNKNOWN equips" sclass="k9mo" onClick="notifyUnknownSerials(glob_sel_grn)" />
 		</hbox>
 		<separator height="3px" />
 		<div id="melgrnlb_holder" />
@@ -384,8 +395,7 @@ void adminFunc(String itype)
 				<div id="impsns_holder" />
 				<hbox>
 					<button id="saveimpd_b" label="Save/link equips to consignment and batch" sclass="k9mo" onClick="grnFunc(self.getId())" />
-					<button id="rediginvt_b" label="Re-dig MEL inventory" sclass="k9mo" onClick="grnFunc(self.getId())" />
-					<button id="notifprob_b" label="NOTIFY on UNKNOWN equips" sclass="k9mo" onClick="notifyUnknownSerials(glob_sel_grn)" />
+					<button id="rediginvt_b" label="Re-dig MEL inventory" sclass="k9mo" onClick="grnFunc(self.getId())" visible="false" />
 					<button id="admdelequip_b" label="REMOVE" sclass="k9mo" visible="true" onClick="adminFunc(self.getId())" />
 				</hbox>
 			</vbox>
@@ -416,6 +426,7 @@ if(useraccessobj.accesslevel == 9)
 {
 	admin_b.setVisible(true);
 	admdelequip_b.setVisible(true);
+	grnid_tb.setValue("42"); // fast check
 }
 
 
@@ -425,4 +436,3 @@ if(useraccessobj.accesslevel == 9)
 </panel>
 </div>
 </zk>
-

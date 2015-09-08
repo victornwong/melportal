@@ -18,20 +18,21 @@
 <zscript>
 <![CDATA[
 MYTITLE = "MEL - Audit / Specs Update";
-MYVERSION = "v0.3.3";
+MYVERSION = "v0.3.4";
 MYPANEL = "melitmspecupdpanl";
-/*
-@Title Inventory items spec update - like in FOCUS (for MEL project)
-@Author Victor Wong
-@Since 08/01/2015
-@Notes
-Knockoff from RWMS
-06/02/2015: added operability, completeness and appearance to 5 drop-downs,
-10/03/2015: redesign to get items to be QC by user instead of showing the list from MELGRN
-18/03/2015: put in docu-mang things
-27/03/2015: chandra req, row-count for items, RW asset-tag column in MEL audit report
-12/08/2015: Nisha gave processor generation types for drop-downs which will lead to getting the price from market-price-book
-*/
+/**
+ * Inventory items spec update - like in FOCUS (for MEL project)
+ * @author Victor Wong
+ * @since 08/01/2015
+ *
+ * Knockoff from RWMS
+ * 06/02/2015: added operability, completeness and appearance to 5 drop-downs,
+ * 10/03/2015: redesign to get items to be QC by user instead of showing the list from MELGRN
+ * 18/03/2015: put in docu-mang things
+ * 27/03/2015: chandra req, row-count for items, RW asset-tag column in MEL audit report
+ * 12/08/2015: Nisha gave processor generation types for drop-downs which will lead to getting the price from market-price-book
+ * 08/09/2015: some cleanup on the FC6 injector funcs and use TESTING_MODE for debugging and production selection
+ */
 import java.util.*;
 import java.text.*;
 import java.io.*;
@@ -56,6 +57,8 @@ if(useraccessobj == null) Executions.sendRedirect(MAINLOGIN_PAGE);
 kiboo = new Generals(); sqlhand = new SqlFuncs(); lbhand = new ListboxHandler();
 guihand = new GuiFuncs(); luhand = new LookupFuncs(); dmshand = new DMSFuncs();
 gridhand = new GridHandler(); ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
+
+TESTING_MODE = false;
 
 String[] scanitems_colws =
 {
@@ -317,6 +320,7 @@ class itmdoubleclik implements org.zkoss.zk.ui.event.EventListener
 		ifnd = lbhand.getListcellItemLabel(isel,1);
 		ityp = lbhand.getListcellItemLabel(isel,2);
 		sumbatStockName(ifnd,ityp);
+		checkstock_pop.close();
 	}
 }
 checkitems_doubleclicker = new itmdoubleclik();
@@ -420,13 +424,10 @@ void MELaudit_func(String itype)
 		}
 		else
 		{
-			if(Messagebox.show("This will upload a Temp.GRN into FOCUS..", "Are you sure?",
-				Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
-
 			atgs = getAssetTagsFromListbox();
 			if(atgs.equals(""))
 			{
-				msgtext = "ERR: cannot get asset-tags";
+				msgtext = "ERR: no asset-tags or invalied asset-tags";
 			}
 			else
 			{
@@ -434,6 +435,37 @@ void MELaudit_func(String itype)
 				sqlstm = "update mel_audit set fc6_grn='" + vno + "' where origid=" + glob_sel_audit;
 				msgtext = "Temp.GRN " + vno + " has been uploaded into FOCUS..";
 				add_RWAuditLog(JN_linkcode(),"", "Upload to FOCUS Temp.GRN", unm);
+			}
+		}
+	}
+
+	if(itype.equals("uploadtempgrn_b")) // combination of post-specs and upload tempGRN - knockoff from specUpdate_v1.zul
+	{
+		if(glob_sel_audit.equals("")) return;
+
+		if(!glob_sel_tempgrn.equals("")) // already got a temp.grn
+		{
+			msgtext = "ERR: Items already uploaded to Focus Temp.GRN..";
+		}
+		else
+		{
+			if(Messagebox.show("Posting specs and insert Temp.GRN into FOCUS, you cannot change anything after this..", "Are you sure?",
+				Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) != Messagebox.YES) return;
+
+			atgs = updateInventory_AuditItems();
+
+			if(!atgs.equals("")) // got some asset-tags returned for further processing
+			{
+				if(postSpecs_LB()) // post-specs and if ok, insert tempGRN
+				{
+					vno = inject_FC6GRN(atgs);
+
+					// TODO need to update some metadata into tempGRN . important!!
+
+					sqlstm = "update mel_audit set fc6_grn='" + vno + "' where origid=" + glob_sel_audit;
+					msgtext = "OK: Specs posted and TempGRN : " + vno + " uploaded into FOCUS.";
+					add_RWAuditLog(JN_linkcode(),"", "Posted specs-update and upload FOCUS TempGRN " + vno, unm);
+				}
 			}
 		}
 	}
@@ -561,6 +593,9 @@ void showCSGN_breakdown(String icsgn)
 		<vbox>
 			<button id="settodate_b" label="Set to date" sclass="k9" onClick="adminFunc(self.getId())" />
 			<button id="clrtempgrn_b" label="Clear T.GRN entry" sclass="k9" onClick="adminFunc(self.getId())" />
+			<separator height="5px" />
+			<button id="postspecs_b" label="1. Post specs-update FC6" sclass="k9mo" style="color:#F41717;text-decoration:underline" onClick="MELaudit_func(self.getId())" visible="false" />
+			<button id="postgrn_b" label="2. Upload into FC6 Temp.GRN" sclass="k9mo" style="color:#F41717;text-decoration:underline" onClick="MELaudit_func(self.getId())" visible="false" />
 		</vbox>
 	</div>
 </popup>
@@ -574,8 +609,7 @@ void showCSGN_breakdown(String icsgn)
 			<button id="shwauditlogs_b" label="AuditLog" sclass="k9mo" onClick="MELaudit_func(self.getId())" />
 			<button id="clraudit_b" label="Clear status to DRAFT" sclass="k9mo" onClick="rwcoord_pop.close(); adminFunc(self.getId())" />
 			<separator height="5px" />
-			<button id="postspecs_b" label="1. Post specs-update FC6" sclass="k9mo" style="color:#F41717;text-decoration:underline" onClick="MELaudit_func(self.getId())" visible="false" />
-			<button id="postgrn_b" label="2. Upload into FC6 Temp.GRN" sclass="k9mo" style="color:#F41717;text-decoration:underline" onClick="MELaudit_func(self.getId())" visible="false" />
+			<button id="uploadtempgrn_b" label="Post specs-update + upload TempGRN" sclass="k9mo" style="color:#F41717;text-decoration:underline" onClick="MELaudit_func(self.getId())" />
 		</vbox>
 	</div>
 </popup>

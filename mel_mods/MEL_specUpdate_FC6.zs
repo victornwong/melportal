@@ -55,11 +55,12 @@ void minusAddFocus_Stock(int itype, int qty)
 // RETURN: asset-tags in sql-ready string format
 String updateInventory_AuditItems()
 {
-	if(adtitems_holder.getFellowIfAny("audititems_lb") == null) return null;
-	if(audititems_lb.getItemCount() == 0) return null;
+	if(adtitems_holder.getFellowIfAny("audititems_lb") == null) return "";
+	if(audititems_lb.getItemCount() == 0) return "";
 
 	//AUDIT_PALLET_ID = "4"; // testing on F10 db
-	AUDIT_PALLET_ID = "4452"; // F12 db, "AUDIT" pallet
+	//AUDIT_PALLET_ID = "4452"; // F12 db, "AUDIT" pallet
+	AUDIT_PALLET_ID = (TESTING_MODE) ? "4452" : "4497"; // 0J0=4452, 0J1=4497 for "AUDIT" pallet in mr003
 	shpc = "MEL SHIPMENT";
 	tdate = calcFocusDate( kiboo.todayISODateTimeString() ).toString();
 	sqlstm = log_assettags = ret_assettags = "";
@@ -101,17 +102,17 @@ String updateInventory_AuditItems()
 				"set @_masterid = (select masterid from mr001 where code2='" + atg + "'); " +
 
 				// for RWMS, need this for EOL equips
-				//"insert into ibals (code,date_,dep,qiss,qrec,val,qty2) " +
-				//"values (@_masterid," + tdate + ",0,0," + qty + ",0,0); " +
-				//"update mr001 set name='" + itm + "',code='" + snm + "' where code2='" + atg + "';" +
+				"insert into ibals (code,date_,dep,qiss,qrec,val,qty2) " +
+				"values (@_masterid," + tdate + ",0,0," + qty + ",0,0); " +
+				"update mr001 set name='" + itm + "',code='" + snm + "' where code2='" + atg + "';" +
 				"end;";
 
 				ret_assettags += "'" + atg + "',";
 			}
 		}
-		//f30_gpSqlExecuter(sqlstm);
-		sqlhand.rws_gpSqlExecuter(sqlstm);
-
+		if(TESTING_MODE) f30_gpSqlExecuter(sqlstm);
+		else fJ1_gpSqlExecuter(sqlstm);
+		//sqlhand.rws_gpSqlExecuter(sqlstm);
 		//lgstr = "Update inventory : " + log_assettags;
 		//add_RWAuditLog(JN_linkcode(),"", lgstr, useraccessobj.username);
 
@@ -152,15 +153,15 @@ boolean postSpecs_LB()
 			"where extraid=(select eoff from mr001 where code2='" + atg + "');";
 		}
 	}
-	//sqlhand.rws_gpSqlExecuter(sqlstm);
-	f30_gpSqlExecuter(sqlstm);
-	//alert(sqlstm);
+	if(TESTING_MODE) f30_gpSqlExecuter(sqlstm);
+	else fJ1_gpSqlExecuter(sqlstm);
+
 	return true;
 }
 
 // FOCUS5010 table-refs
 // GRN_ACCOUNT_NO = "1251"; testing account
-GRN_ACCOUNT_NO = "2509"; // mr000 MACQUARIE EQUIPMENT LEASING - AP
+GRN_ACCOUNT_NO = "2509"; // 0J0.mr000 MACQUARIE EQUIPMENT LEASING - AP
 GRN_EXTRAHEADEROFF = "u002c";
 GRN_EXTRAOFF = "u012c";
 GRN_VOUCHERTYPE = "1281";
@@ -182,18 +183,17 @@ void inject_GRN_Headers(String[] hdv)
 	"0x0024, 4549, 0x00," +
 	GRN_VOUCHERTYPE + ", @domaxid, 3, 0, 0 );";
 
-	f30_gpSqlExecuter(sqlstm1);
-	//sqlhand.rws_gpSqlExecuter(sqlstm1);
+	if(TESTING_MODE) f30_gpSqlExecuter(sqlstm1);
+	else fJ1_gpSqlExecuter(sqlstm1);
 
 	sqlstm2 = "select headerid,voucherno from header where login='" + lgn + "';"; // get inserted header.headerid
-	r = f30_gpSqlFirstRow(sqlstm2);
-	//r = sqlhand.rws_gpSqlFirstRow(sqlstm2);
+	r = (TESTING_MODE) ? f30_gpSqlFirstRow(sqlstm2) : fJ1_gpSqlFirstRow(sqlstm2);
 	hdv[0] = r.get("headerid").toString();
 	hdv[3] = r.get("voucherno");
 
 	sqlstm3 = "update header set login='su' where headerid=" + hdv[0];
-	f30_gpSqlExecuter(sqlstm3);
-	//sqlhand.rws_gpSqlExecuter(sqlstm3);
+	if(TESTING_MODE) f30_gpSqlExecuter(sqlstm3);
+	else fJ1_gpSqlExecuter(sqlstm3);
 
 	// newshipmentcodeyh,grnremarksyh (for FOCUS5012 need these 2 extra-fields)
 	// data.DO_EXTRAHEADEROFF - u002c.extraid
@@ -207,33 +207,33 @@ void inject_GRN_Headers(String[] hdv)
 	"insert into " + GRN_EXTRAHEADEROFF + " (extraid, vendorrefyh, narrationyh, receipttypeyh, receivedbyyh, ponoyh, shipmentcodeyh, itemtypeyh, newshipmentcodeyh, grnremarksyh) values " +
 	"(@maxid, '', '', '', '', '" + lgn + "', '', '', '', '');";
 
-	f30_gpSqlExecuter(sqlstm4);
-	//sqlhand.rws_gpSqlExecuter(sqlstm4);
+	if(TESTING_MODE) f30_gpSqlExecuter(sqlstm4);
+	else fJ1_gpSqlExecuter(sqlstm4);
 
 	sqlstm5 = "select extraid from " + GRN_EXTRAHEADEROFF + " where ponoyh='" + lgn + "';";
-	r = f30_gpSqlFirstRow(sqlstm5);
-	//r = sqlhand.rws_gpSqlFirstRow(sqlstm5);
+	r = (TESTING_MODE) ? f30_gpSqlFirstRow(sqlstm5) : fJ1_gpSqlFirstRow(sqlstm5);
 	hdv[1] = r.get("extraid").toString();
 
 	sqlstm6 = "update " + GRN_EXTRAHEADEROFF + " set ponoyh='' where extraid=" + hdv[1]; // blank-it
-	f30_gpSqlExecuter(sqlstm6);
-	//sqlhand.rws_gpSqlExecuter(sqlstm6);
+
+	if(TESTING_MODE) f30_gpSqlExecuter(sqlstm6);
+	else fJ1_gpSqlExecuter(sqlstm6);
 
 	// data.GRN_EXTRAOFF = u012c.extraid
 	sqlstm7 = "declare @maxid int; set @maxid = (select max(extraid)+1 from " + GRN_EXTRAOFF + ");" +
 	"insert into " + GRN_EXTRAOFF + " (extraid,remarksyh) values (@maxid,'" + lgn + "');";
 
-	f30_gpSqlExecuter(sqlstm7);
-	//sqlhand.rws_gpSqlExecuter(sqlstm7);
+	if(TESTING_MODE) f30_gpSqlExecuter(sqlstm7);
+	else fJ1_gpSqlExecuter(sqlstm7);
 
 	sqlstm8 = "select extraid from " + GRN_EXTRAOFF + " where remarksyh='" + lgn + "';";
-	r = f30_gpSqlFirstRow(sqlstm8);
-	//r = sqlhand.rws_gpSqlFirstRow(sqlstm8);
+	r = (TESTING_MODE) ? f30_gpSqlFirstRow(sqlstm8) : fJ1_gpSqlFirstRow(sqlstm8);
 	hdv[2] = r.get("extraid").toString();
 
 	sqlstm9 = "update " + GRN_EXTRAOFF + " set remarksyh='' where extraid=" + hdv[2]; // blank-it
-	f30_gpSqlExecuter(sqlstm9);
-	//sqlhand.rws_gpSqlExecuter(sqlstm9);
+
+	if(TESTING_MODE) f30_gpSqlExecuter(sqlstm9);
+	else fJ1_gpSqlExecuter(sqlstm9);
 }
 
 String inject_FC6GRN(String iasset_tags)
@@ -241,23 +241,21 @@ String inject_FC6GRN(String iasset_tags)
 	// headvals[0] = headerid, headvals[1] = DO_EXTRAHEADEROFF, headvals[2] = DO_EXTRAOFF, headvals[3] = voucherno
 	String[] headvals = new String[4];
 	linecount = 0;
-	//kdate = calcFocusDate("2007-03-31");
 	kdate = calcFocusDate( kiboo.todayISODateString() ).toString();
 
 	sqlstm1 = "select m.masterid as pcode, p.masterid as tags6v from mr001 AS m left join " +
 	"dbo.u0001 AS u ON m.Eoff = u.ExtraId left join dbo.mr008 AS p ON u.ProductNameYH = p.MasterId " +
 	"where m.code2 in (" + iasset_tags + ");";
 
-	rx = f30_gpSqlGetRows(sqlstm1);
-	//rx = sqlhand.rws_gpSqlGetRows(sqlstm1);
-	//alert(kdate + " :: " + sqlstm1 + " :: " + rx);
-
+	rx = (TESTING_MODE) ? f30_gpSqlGetRows(sqlstm1) : fJ1_gpSqlGetRows(sqlstm1);
 	inject_GRN_Headers(headvals);
 	
 	//kk = "headerid=" + headvals[0] + "\nu002c.extraid=" + headvals[1] + "\nu012c.extraid=" + headvals[2] + "\nvoucherno=" + headvals[3];
 	//debuglabel.setValue(kk);
 
 	mainsqlstm = "declare @dmaxid int; declare @imaxid int; ";
+
+	grn_account_inject = (TESTING_MODE) ? GRN_ACCOUNT_NO : "3647"; // 0J0=2509, 0J1=3647 for "MACQUARIE EQUIPMENT LEASING - AP"
 
 	for(d : rx)
 	{
@@ -281,7 +279,7 @@ String inject_FC6GRN(String iasset_tags)
 		"headeroff, extraoff, extraheaderoff, salesoff," +
 		"code, duedate, sizeofrec, links1, links2, links3, linktoprbatch, exchgrate, tags4, tags5, tags7, " +
 		"binnoentries, reserveno, reservetype) values (" +
-		"@dmaxid, " + kdate + "," + GRN_VOUCHERTYPE + ", '" + headvals[3] +"'," + GRN_ACCOUNT_NO + ", " + prodcode + "," +
+		"@dmaxid, " + kdate + "," + GRN_VOUCHERTYPE + ", '" + headvals[3] +"'," + grn_account_inject + ", " + prodcode + "," +
 		"3, 3, 0, 9, 0, 0, 0, 2622464, 0, 0, " + tags6 + ", " +
 		headvals[0] + "," + headvals[2] + "," + headvals[1] + ",@imaxid," +
 		"1078," + kdate + ",80, 0, 0, 0, 0, 1, 0, 0, 0," +
@@ -293,8 +291,9 @@ String inject_FC6GRN(String iasset_tags)
 	mainsqlstm += "update header set noentries=" + linecount.toString() + ", tnoentries=" + linecount.toString() +
 	" where headerid=" + headvals[0] + ";"; // update no. lines in header
 
-	f30_gpSqlExecuter(mainsqlstm);
-	//sqlhand.rws_gpSqlExecuter(mainsqlstm);
+	if(TESTING_MODE) f30_gpSqlExecuter(mainsqlstm);
+	else fJ1_gpSqlExecuter(mainsqlstm);
+
 	return headvals[3]; // return voucher-no
 }
 

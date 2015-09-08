@@ -3,7 +3,8 @@ import org.victor.*;
 
 void toggButts(boolean iwhat)
 {
-	Object[] bb = { saveimpd_b, rediginvt_b, notifprob_b, savemelgrn_b, impsnums_b, admdelequip_b };
+	// notifprob_b
+	Object[] bb = { saveimpd_b, rediginvt_b, savemelgrn_b, impsnums_b, admdelequip_b };
 	for(i=0;i<bb.length;i++)
 	{
 		bb[i].setDisabled(iwhat);
@@ -202,19 +203,19 @@ Object[] csgnasshd = // knockoff csgnFuncs.zs
 	new listboxHeaderWidthObj("No.",true,"50px"),
 	new listboxHeaderWidthObj("Serial Number",true,""),
 	new listboxHeaderWidthObj("RW AssTag",true,""),
-	new listboxHeaderWidthObj("CSGN",true,""),
+	new listboxHeaderWidthObj("CSGN",true,""), // 3
 	new listboxHeaderWidthObj("Contract #",true,""),
 	new listboxHeaderWidthObj("Asset Number (MEL Ref)",true,""),
-	new listboxHeaderWidthObj("MEL Item",true,""), // 5
+	new listboxHeaderWidthObj("MEL Item",true,""), // 6
 	new listboxHeaderWidthObj("Asset Category",true,""),
 	new listboxHeaderWidthObj("Make",true,""),
 	new listboxHeaderWidthObj("Model",true,""),
 	new listboxHeaderWidthObj("Processor Or Monitor Type",true,""),
-	new listboxHeaderWidthObj("Processor Speed Or Monitor Size",true,""), // 10
+	new listboxHeaderWidthObj("Processor Speed Or Monitor Size",true,""), // 11
 	new listboxHeaderWidthObj("HDD Size",true,""),
 	new listboxHeaderWidthObj("RAM",true,""),
 	new listboxHeaderWidthObj("MELGRN",true,""),
-	new listboxHeaderWidthObj("Recv",true,""),
+	new listboxHeaderWidthObj("Recv",true,""), // 15
 };
 
 // Parse the serial-numbers scanned and sumbat
@@ -257,6 +258,11 @@ void importParse_MEL_snums(String isn, String icsgn)
 					if(ir.get("received") != null) // equip already received earlier
 					{
 						sty = "background:#2E60CE;font-size:9px;color:#ffffff";
+					}
+					unknownt = ir.get("unknown");
+					if(unknownt != null)
+					{
+						sty = (unknownt) ? "background:#CC2F2F;font-size:9px;color:#ffffff" : "";
 					}
 				}
 				else
@@ -308,12 +314,13 @@ void updateMEL_inventory(String igrn, String ibn)
 		}
 		else
 		{
+			/* 07/09/2015: take out this control logic - Lai req to allow everything through
 			if(!xdr.equals("")) // if equip already received earlier - problem!!
 			{
 				guihand.showMessageBox("ERR: some equipment(s) already being received earlier. Cannot proceed");
 				return;
 			}
-
+			*/
 			snums += xsn + "\n";
 			satgs += xastg + "\n";
 
@@ -344,7 +351,6 @@ void updateMEL_inventory(String igrn, String ibn)
 	{
 		sqlhand.gpSqlExecuter(sqlstm);
 		guihand.showMessageBox("Serial-numbers saved into database..");
-		//alert(sqlstm);
 	}
 }
 
@@ -369,6 +375,10 @@ String commit_GRN_equips(String igrn, String ibn)
 	return retsql;
 }
 
+/**
+ * 07/09/2015: some modif to use mel_inventory.unknown flag instead of mel_grn.unknown_snums
+ * @param iwhat MEL-grn origid
+ */
 void notifyUnknownSerials(String iwhat)
 {
 	if(iwhat.equals("")) return;
@@ -376,28 +386,43 @@ void notifyUnknownSerials(String iwhat)
 
 	r = getMELGRN_rec(iwhat);
 	if(r == null) return;
+	/*
 	if(r.get("unknown_snums") == null)
 	{
 		guihand.showMessageBox("ERR: no unknown serial-numbers in record..");
 		return;
 	}
-	else
+	*/
+	// 07/09/2015: get unknown serial-numbers by mel_inventory.unknown flag
+	prntcsgn = r.get("parent_csgn").toString();
+	sqlstm = "select serial_no from mel_inventory where parent_id=" + prntcsgn + " and unknown=1;";
+	uks = sqlhand.gpSqlGetRows(sqlstm);
+	if(uks.size() == 0) // no unknowns, show msg and return
 	{
-		subj = "[UNKNOWN] Serial-numbers detected in MELGRN: " + iwhat + " at " + r.get("rwlocation");
-		topeople = luhand.getLookups_ConvertToStr("MEL_RW_COORD",2,",");
-		emsg =
-		"------------------------------------------------------" +
-		"\nMELGRN          : " + iwhat +
-		"\nRW warehouse    : " + r.get("rwlocation") +
-		"\nUnknown serials :\n\n" +
-		sqlhand.clobToString(r.get("unknown_snums")) +
-		"\n\nPlease login to check and process ASAP." +
-		"\n------------------------------------------------------";
-
-		gmail_sendEmail("", GMAIL_username, GMAIL_password, GMAIL_username, topeople, subj, emsg );
-		add_RWAuditLog(JN_linkcode(),"", "Send unknown serials notification email", useraccessobj.username);
-		guihand.showMessageBox("Notification email sent for unknown serial-numbers detected..");
+		guihand.showMessageBox("No unknown serial-numbers found..");
+		return; 
 	}
+	unknowns = "";
+	for(d : uks)
+	{
+		unknowns += d.get("serial_no") + "\n";
+	}
+
+	subj = "[UNKNOWN] Serial-numbers detected in MELGRN: " + iwhat + " at " + r.get("rwlocation");
+	topeople = luhand.getLookups_ConvertToStr("MEL_RW_COORD",2,",");
+	emsg =
+	"------------------------------------------------------" +
+	"\nMELGRN          : " + iwhat +
+	"\nRW warehouse    : " + r.get("rwlocation") +
+	"\nUnknown serials :\n\n" +
+	//sqlhand.clobToString(r.get("unknown_snums")) +
+	unknowns +
+	"\n\nPlease login to check and process ASAP." +
+	"\n------------------------------------------------------";
+
+	gmail_sendEmail("", GMAIL_username, GMAIL_password, GMAIL_username, topeople, subj, emsg );
+	add_RWAuditLog(JN_linkcode(),"", "Send unknown serials notification email", useraccessobj.username);
+	guihand.showMessageBox("Notification email sent for unknown serial-numbers detected..");
 }
 
 void notifyCommitMELGRN(String iwhat)
@@ -426,4 +451,49 @@ void notifyCommitMELGRN(String iwhat)
 	gmail_sendEmail("", GMAIL_username, GMAIL_password, GMAIL_username, topeople, subj, emsg );
 	add_RWAuditLog(JN_linkcode(),"", "Commit MELGRN and sent notification email", useraccessobj.username);
 	guihand.showMessageBox("Committal notification email sent..");
+}
+
+/**
+ * Inject unknown serial-numbers captured. Uses rec obj from mel_grn
+ * @param igr mel_grn rec obj retrieved by caller
+ */
+String injectUnknownSerialNumbers(Object igr)
+{
+	// check parent_csgn assigned
+	if(igr.get("parent_csgn") == null)
+	{
+		return "ERR: this MELGRN is not link to CSGN..cannot proceed";
+	}
+
+	prntcsgn  = igr.get("parent_csgn").toString();
+
+	knums = atgs = "";
+	todaydate =  kiboo.todayISODateTimeString();
+	if(igr.get("serial_numbers") != null) knums = sqlhand.clobToString(igr.get("serial_numbers"));
+	if(igr.get("unknown_snums") != null) knums += sqlhand.clobToString(igr.get("unknown_snums"));
+	if(igr.get("rw_asset_tags") != null) atgs = sqlhand.clobToString(igr.get("rw_asset_tags"));
+
+	if(!knums.equals(""))
+	{
+		iks = sqlstm = "";
+		isn = knums.split("\n");
+		iatg = atgs.split("\n");
+		for(i=0; i<isn.length; i++) // store 'em snums and ass-tags into map
+		{
+			try
+			{
+				//if(TESTING_MODE) debuglabel.setValue(debuglabel.getValue() + "\nsn: " + isn[i] + " atg: " + iatg[i]);
+				sqlstm += "if not exists(select 1 from mel_inventory where rw_assettag='" + iatg[i] + "') " +
+					"begin " +
+					"insert into mel_inventory (parent_id,serial_no,rw_assettag,received,unknown) values " +
+					"(" + prntcsgn + ",'" + isn[i] + "','" + iatg[i] + "','" + todaydate + "',1)" +
+					"end;";
+			} catch (Exception e) {}
+		}
+		sqlhand.gpSqlExecuter(sqlstm);
+	}
+	else
+		return "ERR: no serial-numbers or asset-tags to process.";
+
+	return ""; // everything good - return empty string
 }
