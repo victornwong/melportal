@@ -4,6 +4,25 @@ import org.victor.*;
 
 MEL_EQU_ROWS_START = 17;
 
+/**
+ * Get MEL consignment/batch items qty recv summary
+ * @param  icsgn the CSGN ID
+ * @return       db rec
+ */
+Object getItemsReceivedSummary(String icsgn)
+{
+	sqlstm = "select mc.csgn, " +
+	"((select count(origid) from mel_inventory where parent_id=mc.origid) - " +
+	"(select count(origid) from mel_inventory where parent_id=mc.origid and unknown=1)) as real_csgn_qty, " +
+	"(select count(origid) from mel_inventory where parent_id=mc.origid) as csgn_qty, " +
+	"(select count(origid) from mel_inventory where melgrn_id in (select origid from mel_grn where parent_csgn=mc.origid)) as recv_qty, " +
+	"(select count(origid) from mel_inventory where parent_id=mc.origid and unknown=1) as unknown_qty, " +
+	"(select count(origid) from mel_inventory where audit_id=ma.origid) as audit_qty " +
+	"from mel_csgn mc left join mel_audit ma on ma.parent_csgn = mc.origid where mc.mstatus='COMMIT' and mc.csgn<>'UNDEF' and mc.origid=" + icsgn;
+
+	return sqlhand.gpSqlFirstRow(sqlstm);
+}
+
 void toggButts(boolean iwhat)
 {
 	Object[] bb = { uplassets_b, savelist_b };
@@ -408,6 +427,10 @@ void sendCsgn_Notif(int itype, String icsgn)
 		case 7: // 13/08/2015: req nisha, send notif if dups found in consignment upload
 			extranotes = "Duplicates serial-numbers or asset-numbers, etc";
 			break;
+
+		case 8: // 28/09/2015: req nisha - qty recv summary
+			extranotes = "Items received summary";
+			break;
 	}
 
 	emsg =
@@ -423,16 +446,19 @@ void sendCsgn_Notif(int itype, String icsgn)
 	"\n\nPlease login to check and process ASAP." +
 	"\n------------------------------------------------------";
 
+	topeople = "victor@rentwise.com";
+	if(!TESTING_MODE) topeople = luhand.getLookups_ConvertToStr("MEL_CONTACTS",2,",");
+
 	switch(itype)
 	{
 		case 1: // csgn commit notif
 			subj = "[COMMITTED] MEL Consignment-note: " + icsgn + " (ETA:" + shipeta + ")";
-			topeople = luhand.getLookups_ConvertToStr("MEL_RW_COORD",2,",") + "," + partn;
+			topeople += "," + partn;
 			break;
 
 		case 2: // cancel notif
 			subj = "[CANCELLED] MEL Consignment-note: " + icsgn;
-			topeople = luhand.getLookups_ConvertToStr("MEL_RW_COORD",2,",") + "," + partn;
+			topeople += "," + partn;
 			break;
 
 		case 3: // send test notif
@@ -465,25 +491,39 @@ void sendCsgn_Notif(int itype, String icsgn)
 
 		case 5: // 13/08/2015: req nisha, send notif email when price quotes ready for MEL
 			subj = "[QUOTE COMPLETED] MEL Consignment-note: " + icsgn;
-			topeople = luhand.getLookups_ConvertToStr("MEL_CONTACTS",2,",");
 			break;
 
 		case 6: // 13/08/2015: req nisha, send notif when audit-report ready for MEL
 			subj = "[AUDIT REPORT COMPLETED] MEL Consignment-note: " + icsgn;
-			topeople = luhand.getLookups_ConvertToStr("MEL_CONTACTS",2,",");
 			break;
 
 		case 7: // 13/08/2015: req nisha, send notif if dups found in consignment upload
 			subj = "[DUPLICATES FOUND] MEL Consignment-note: " + icsgn;
-			//topeople = luhand.getLookups_ConvertToStr("MEL_CONTACTS",2,",");
-
-			topeople = "victor@rentwise.com,laikw@rentwise.com";
+			topeople = "victor@rentwise.com,laikw@rentwise.com"; // TODO need to remove this later
 			dups_text = (r.get("dups_text") != null) ? sqlhand.clobToString(r.get("dups_text")) : "";
 			emsg += "\n\nDuplicates:\n" + dups_text;
+			break;
+
+		case 8: // 28/09/2015: req by nisha, summary of qty recv
+			subj = "[SUMMARY] Items received for consignment : " + icsgn;
+			kr = getItemsReceivedSummary(icsgn);
+			tqty = rqty = uqty = "";
+			try { tqty = kr.get("real_csgn_qty").toString(); } catch (Exception e) {}
+			try { rqty = kr.get("recv_qty").toString(); } catch (Exception e) {}
+			try { uqty = kr.get("unknown_qty").toString(); } catch (Exception e) {}
+
+			sumr =
+			"\n\nQuantity in batch/consignment : " + tqty +
+			"\nQuantity received             : " + rqty +
+			"\nUnknown items                 : " + uqty +
+			"\n\n------------------------------------------------------";
+
+			emsg += sumr;
+
+			msgtext = "Items received summary sent..";
 
 			break;
 	}
 	if(!topeople.equals("")) gmail_sendEmail("", GMAIL_username, GMAIL_password, GMAIL_username, topeople, subj, emsg );
 	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
 }
-

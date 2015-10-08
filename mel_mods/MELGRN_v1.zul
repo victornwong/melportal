@@ -16,7 +16,7 @@
 <zscript>
 <![CDATA[
 MYTITLE = "MEL - Goods Receival";
-MYVERSION = "v0.1.1";
+MYVERSION = "v0.1.2";
 MYPANEL = "melgrnthingpael";
 /**
  * @title MEL goods receival
@@ -26,6 +26,10 @@ MYPANEL = "melgrnthingpael";
  * 07/09/2015: Lai req, unknown serial-nums, still flow in - insert into mel_inventory but with mel_inventory.unknown flag set
  * 	changes made to MELGRN_funcs.notifyUnknownSerials() to get unknowns by mel_inventory.unknown instead of mel_grn.unknown_snums
  * 	new MELGRN_funcs.injectUnknownSerialNumbers() added to inject unknowns into mel_inventory
+ * 	
+ * 28/09/2015: auto check for dups within listbox ONLY for import/parse
+ * 28/09/2015: put hi-lite bar description
+ * 
  */
 import java.util.*;
 import java.text.*;
@@ -39,7 +43,7 @@ kiboo = new Generals(); sqlhand = new SqlFuncs(); lbhand = new ListboxHandler();
 guihand = new GuiFuncs(); luhand = new LookupFuncs(); dmshand = new DMSFuncs();
 gridhand = new GridHandler(); ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 
-TESTING_MODE = true; // testing mode TRUE, some funcs will do different things 
+TESTING_MODE = false; // testing mode TRUE, some funcs will do different things 
 
 PARSE_SNUM_POS = 1; // posi to MELGRN_funcs.csgnasshd
 PARSE_ASSETTAG_POS = 2;
@@ -58,6 +62,25 @@ String JN_linkcode()
 {
 	if(glob_sel_grn.equals("")) return "";
 	return MELGRN_PREFIX + glob_sel_grn;
+}
+
+// make it stand-alone because being called in multiple points
+String saveGRN_Meta()
+{
+	isel = xm_csgn.getSelectedItem();
+	bnm = kiboo.replaceSingleQuotes( xm_batch_no.getValue().trim() );
+	if(bnm.equals("")) { return "ERR: please enter the BATCH number"; }
+	else
+	{
+		try
+		{
+			csid = lbhand.getListcellItemLabel(isel,1);
+			sqlstm = "update mel_grn set parent_csgn=" + csid + ", batch_no='" + bnm + "' where origid=" + glob_sel_grn;
+			sqlhand.gpSqlExecuter(sqlstm);
+			show_MELGRN(last_showgrn_type);
+			return "OK: MELGRN metadata saved..";
+		} catch (Exception e) { return "ERR: please select a valid consignment/batch"; }
+	}
 }
 
 void grnFunc(String itype)
@@ -87,14 +110,7 @@ void grnFunc(String itype)
 
 	if(itype.equals("savemelgrn_b")) // save MEL-grn meta data (mel-ref, batchno, etc)
 	{
-		isel = xm_csgn.getSelectedItem();
-		bnm = kiboo.replaceSingleQuotes( xm_batch_no.getValue().trim() );
-		if(bnm.equals("")) { msgtext = "ERR: please enter the BATCH number"; }
-		else
-		{
-			csid = lbhand.getListcellItemLabel(isel,1);
-			sqlstm = "update mel_grn set parent_csgn=" + csid + ", batch_no='" + bnm + "' where origid=" + glob_sel_grn;
-		}
+		msgtext = saveGRN_Meta();
 	}
 
 	if(itype.equals("saveimpd_b")) // update inventory based on scanned snums
@@ -121,42 +137,52 @@ void grnFunc(String itype)
 
 	if(itype.equals("commgrn_b")) // commit MEL-GRN
 	{
-		/*
-		if(!glob_sel_unknown.equals("")) // got unknown unresolved serial-numbers
-			msgtext = "ERR: there are unknown serial-numbers, please resolve them to commit this MELGRN";
-		*/
-		if(glob_sel_stat.equals("DRAFT"))
+		tt = saveGRN_Meta(); // save the MELGRN metadata
+		if(tt.indexOf("ERR") != -1) { msgtext = tt; }
+		else
 		{
-			r = getMELGRN_rec(glob_sel_grn);
-			if(r == null) { guihand.showMessageBox("ERR: cannot access MELGRN record.."); return; }
-			// original control, if unknown snums found, cannot commit
-			// if(r.get("unknown_snums") != null) { guihand.showMessageBox("ERR: unknown serial-numbers found, cannot commit.."); return; }
-			// 07/09/2015: Laq req, still can commit if unknown snums. Need to inject and link unknown snums to csgn
-			ers = injectUnknownSerialNumbers(r);
-			if(!ers.equals("")) // something wrong with err string return
+			/*
+			if(!glob_sel_unknown.equals("")) // got unknown unresolved serial-numbers
+				msgtext = "ERR: there are unknown serial-numbers, please resolve them to commit this MELGRN";
+			*/
+			if(glob_sel_stat.equals("DRAFT"))
 			{
-				guihand.showMessageBox(ers);
-				return;
-			}
+				r = getMELGRN_rec(glob_sel_grn);
 
-			if(Messagebox.show("Once MELGRN committed, no more changes..", "Are you sure?",
-				Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) != Messagebox.YES) return;
+				tcsgn = r.get("parent_csgn");
+				if(tcsgn == null)
+				{
+					guihand.showMessageBox("ERR: You must link this GRN to a MEL BATCH/CSGN before committing");
+					return;
+				}
 
-			updateMEL_inventory(glob_sel_grn, glob_sel_batchno); // upd the scanned snums before committing
-			toggButts(true); // disabled butts once committed
+				if(r == null) { guihand.showMessageBox("ERR: cannot access MELGRN record.."); return; }
+				// original control, if unknown snums found, cannot commit
+				// if(r.get("unknown_snums") != null) { guihand.showMessageBox("ERR: unknown serial-numbers found, cannot commit.."); return; }
+				// 07/09/2015: Lai req, still can commit if unknown snums. Need to inject and link unknown snums to csgn
+				ers = injectUnknownSerialNumbers(r);
+				if(!ers.equals("")) // something wrong with err string return
+				{
+					guihand.showMessageBox(ers);
+					return;
+				}
 
-			sqlstm = "update mel_grn set gstatus='COMMIT', commitdate='" + todaydate + "', commituser='" + unm + "' where origid=" + glob_sel_grn + ";";
-			sqlstm += commit_GRN_equips(glob_sel_grn, glob_sel_batchno);
+				if(Messagebox.show("Once MELGRN committed, no more changes..", "Are you sure?",
+					Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) != Messagebox.YES) return;
 
-			if(!TESTING_MODE) // not in testing-mode, insert audit-logs and send email notif
-			{
+				updateMEL_inventory(glob_sel_grn, glob_sel_batchno); // upd the scanned snums before committing
+				toggButts(true); // disabled butts once committed
+
+				sqlstm = "update mel_grn set gstatus='COMMIT', commitdate='" + todaydate + "', commituser='" + unm + "' where origid=" + glob_sel_grn + ";";
+				sqlstm += commit_GRN_equips(glob_sel_grn, glob_sel_batchno);
+
 				add_RWAuditLog(lnkc,"", "Commit MELGRN: " + glob_sel_grn, unm);
 				notifyCommitMELGRN(glob_sel_grn);
 			}
-		}
-		else
-		{
-			msgtext = "MELGRN is either committed or cancelled or stock-in. No further actions allowed.";
+			else
+			{
+				msgtext = "MELGRN is either committed or cancelled or stock-in. No further actions allowed.";
+			}
 		}
 	}
 
@@ -236,7 +262,10 @@ void adminFunc(String itype)
 
 	if(itype.equals("setdraftgrn_b"))
 	{
-		sqlstm = "update mel_grn set gstatus='DRAFT',commitdate=null,commituser=null where origid=" + glob_sel_grn;
+		sqlstm = "update mel_grn set gstatus='DRAFT',commitdate=null,commituser=null where origid=" + glob_sel_grn + ";" +
+		"update mel_inventory set rw_assettag=null where melgrn_id=" + glob_sel_grn +";";
+
+		msgtext = "Remember to re-save+link the serial+asset-tags";
 	}
 
 	if(itype.equals("clrecvdate_b")) // clear equip recv date
@@ -281,6 +310,11 @@ void adminFunc(String itype)
 		minusAddFocus_Stock(mt,ki);
 	}
 
+	if(itype.equals("chkdupsn_b")) // check dups within imported serial/asset-tags listbox
+	{
+		checkImportParse_serials();
+	}
+
 	if(!sqlstm.equals(""))
 	{
 		sqlhand.gpSqlExecuter(sqlstm);
@@ -306,6 +340,7 @@ void adminFunc(String itype)
 <popup id="adminpop">
 	<div sclass="shadowbox" style="background:#E2241C" width="300px">
 		<vbox>
+			<button id="chkdupsn_b" label="Chk dups serial or asset-tag" sclass="k9mo" onClick="adminFunc(self.getId())" />
 			<button id="shwauditlogs_b" label="Audit-log" sclass="k9mo" onClick="adminFunc(self.getId())" />
 			<button id="setdraftgrn_b" label="Set DRAFT" sclass="k9mo" onClick="adminFunc(self.getId())" />
 			<button id="settodate_b" label="Set todate" sclass="k9mo" onClick="adminFunc(self.getId())" />
@@ -332,7 +367,7 @@ void adminFunc(String itype)
 </style>
 
 <div width="1200px">
-<panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true" >
+<panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="none" collapsible="true" closable="true" >
 <panelchildren style="background:#0C203E">
 	<div sclass="shadowbox" style="background:#3E436B">
 	<label id="debuglabel" multiline="true" />
@@ -375,7 +410,7 @@ void adminFunc(String itype)
 							<listbox id="xm_csgn" mold="select" />
 						</row>
 						<row style="background:#C46A31">
-							<label value="Nota" sclass="k9b" />
+							<label value="Shipment code" sclass="k9b" />
 							<textbox id="xm_batch_no" value="testing" />
 						</row>
 						<row spans="2" style="background:#C46A31">
@@ -391,7 +426,14 @@ void adminFunc(String itype)
 				</hbox>
 			</vbox>
 			<vbox>
-				<label id="k_howmanyscan_lbl" style="color:#ffffff;font-weight:bold" />
+				<hbox>
+					<label id="k_howmanyscan_lbl" style="color:#ffffff;font-weight:bold" />
+					<separator width="10px" />
+					<label sclass="k9b" value="Highlite description: " />
+					<label style="${RECEIVED_SERIALS_STYLE};padding:3px" value="RECEIVED" />
+					<label style="${UNKNOWN_SERIALS_STYLE};padding:3px" value="UNKNOWN" />
+					<label style="${DUPS_SERIALS_STYLE};padding:3px" value="DUPLICATES" />
+				</hbox>
 				<div id="impsns_holder" />
 				<hbox>
 					<button id="saveimpd_b" label="Save/link equips to consignment and batch" sclass="k9mo" onClick="grnFunc(self.getId())" />

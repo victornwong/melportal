@@ -282,8 +282,10 @@ void addAsset_ToMELADT(String iatg, String icsgn)
 		return;
 	}
 
-	sqlstm = "select * from mel_inventory where rw_assettag='" + iatg + "' and parent_id=" + icsgn + " and audit_id is null;";
+	sqlstm = "select * from mel_inventory where rw_assettag='" + iatg + "' and parent_id=" + icsgn;
+	//  + " and audit_id is null;"
 	r = sqlhand.gpSqlFirstRow(sqlstm); // get mel_inventory rec by iatg
+	//alert(sqlstm + " :: " + r);
 	if(r == null)
 	{
 		guihand.showMessageBox("ERR: Cannot get record, either invalid asset-tag or wrong CSGN or already in a different audit-form..");

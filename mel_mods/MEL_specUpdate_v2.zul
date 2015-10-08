@@ -18,7 +18,7 @@
 <zscript>
 <![CDATA[
 MYTITLE = "MEL - Audit / Specs Update";
-MYVERSION = "v0.3.4";
+MYVERSION = "v0.3.5";
 MYPANEL = "melitmspecupdpanl";
 /**
  * Inventory items spec update - like in FOCUS (for MEL project)
@@ -32,6 +32,9 @@ MYPANEL = "melitmspecupdpanl";
  * 27/03/2015: chandra req, row-count for items, RW asset-tag column in MEL audit report
  * 12/08/2015: Nisha gave processor generation types for drop-downs which will lead to getting the price from market-price-book
  * 08/09/2015: some cleanup on the FC6 injector funcs and use TESTING_MODE for debugging and production selection
+ * 17/09/2015: Lai req export w/o pricings, for technicians to fillup pix or whatever manual
+ * 28/09/2015: only Harvin can press the upload t.grn and post-spec button
+ * 06/10/2015: harvin req to put portal username into t.grn receivedbyyh and shipment-code into newshipmentcodeyh
  */
 import java.util.*;
 import java.text.*;
@@ -59,6 +62,7 @@ guihand = new GuiFuncs(); luhand = new LookupFuncs(); dmshand = new DMSFuncs();
 gridhand = new GridHandler(); ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 
 TESTING_MODE = false;
+DEBUG_OUTPUT = false;
 
 String[] scanitems_colws =
 {
@@ -303,6 +307,11 @@ void adminFunc(String itype)
 		sqlstm = "update mel_audit set fc6_grn=null where origid=" + glob_sel_audit;
 	}
 
+	if(itype.equals("sendcomitnotif_b"))
+	{
+		notifyCommit_MELAUDIT_2(glob_sel_audit);
+	}
+
 	if(!sqlstm.equals(""))
 	{
 		sqlhand.gpSqlExecuter(sqlstm);
@@ -460,7 +469,14 @@ void MELaudit_func(String itype)
 				{
 					vno = inject_FC6GRN(atgs);
 
-					// TODO need to update some metadata into tempGRN . important!!
+					melgrnrec = getMELGRN_rec();
+					btchno = "MEL SHIPMENT"; // default incase of null-value
+					try { btchno = melgrnrec.get("batch_no"); } catch (Exception e) {}
+
+					fsql = "update " + GRN_EXTRAHEADEROFF + " set receivedbyyh='" + unm + "', shipmencodeyh='" + btchno + "' where extraid=" +
+					"(select top 1 extraheaderoff from data d where d.vouchertype=" + GRN_VOUCHERTYPE + " and d.voucherno='" + vno + "');";
+
+					sqlhand.rws_gpSqlExecuter(fsql);
 
 					sqlstm = "update mel_audit set fc6_grn='" + vno + "' where origid=" + glob_sel_audit;
 					msgtext = "OK: Specs posted and TempGRN : " + vno + " uploaded into FOCUS.";
@@ -593,6 +609,7 @@ void showCSGN_breakdown(String icsgn)
 		<vbox>
 			<button id="settodate_b" label="Set to date" sclass="k9" onClick="adminFunc(self.getId())" />
 			<button id="clrtempgrn_b" label="Clear T.GRN entry" sclass="k9" onClick="adminFunc(self.getId())" />
+			<button id="sendcomitnotif_b" label="Send commit notif email" sclass="k9" onClick="adminFunc(self.getId())" />
 			<separator height="5px" />
 			<button id="postspecs_b" label="1. Post specs-update FC6" sclass="k9mo" style="color:#F41717;text-decoration:underline" onClick="MELaudit_func(self.getId())" visible="false" />
 			<button id="postgrn_b" label="2. Upload into FC6 Temp.GRN" sclass="k9mo" style="color:#F41717;text-decoration:underline" onClick="MELaudit_func(self.getId())" visible="false" />
@@ -609,7 +626,6 @@ void showCSGN_breakdown(String icsgn)
 			<button id="shwauditlogs_b" label="AuditLog" sclass="k9mo" onClick="MELaudit_func(self.getId())" />
 			<button id="clraudit_b" label="Clear status to DRAFT" sclass="k9mo" onClick="rwcoord_pop.close(); adminFunc(self.getId())" />
 			<separator height="5px" />
-			<button id="uploadtempgrn_b" label="Post specs-update + upload TempGRN" sclass="k9mo" style="color:#F41717;text-decoration:underline" onClick="MELaudit_func(self.getId())" />
 		</vbox>
 	</div>
 </popup>
@@ -644,17 +660,15 @@ void showCSGN_breakdown(String icsgn)
 <style>
 	.GridLayoutNoBorder tr.z-row td.z-row-inner, tr.z-row .z-cell, div.z-grid
 	{
-	border: none; overflow: hidden; zoom: 1;
-	border-top: none; border-left: none; border-right: none; border-bottom: none;
+		border: none; overflow: hidden; zoom: 1;
+		border-top: none; border-left: none; border-right: none; border-bottom: none;
 	} 
 </style>
 
 <div width="1200px">
-<panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true" onClose="panel_Close()">
+<panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="none" collapsible="true" closable="true" onClose="panel_Close()">
 <panelchildren style="background:#B0460E">
-
-	<label id="debugbox" multiline="true" height="100px" visible="false" />
-
+	<label id="debugbox" multiline="true" visible="${DEBUG_OUTPUT}" />
 	<div sclass="shadowbox" style="background:#3E436B">
 		<hbox style="padding:3px">
 			<label value="Start date" sclass="k9b" />
@@ -671,11 +685,14 @@ void showCSGN_breakdown(String icsgn)
 		</hbox>
 		<separator bar="true" />
 		<hbox>
-			<button id="newaudit_b" label="New MELAUDIT" sclass="k9mo" onClick="MELaudit_func(self.getId())" />
-			<button label="Set CSGN" sclass="k9mo" onClick="showCSGNlist(user_location); setcsgn_pop.open(self)" />
-			<button label="Remarks" sclass="k9mo" onClick="setremarks_pop.open(self)" />
-			<button id="commitaudit_b" label="COMMIT" sclass="k9mo" style="color:#DF4213" onClick="MELaudit_func(self.getId())" />
-			<button id="rwcoord_menu" label="RW Control" sclass="k9mo" style="color:#2279D5" visible="false" onClick="rwcoord_pop.open(self)" />
+			<button id="newaudit_b" label="1. New MELAUDIT" sclass="k9mo" onClick="MELaudit_func(self.getId())" />
+			<button label="2. Set CSGN" sclass="k9mo" onClick="showCSGNlist(user_location); setcsgn_pop.open(self)" />
+			<button label="3. Remarks" sclass="k9mo" onClick="setremarks_pop.open(self)" />
+			<button id="commitaudit_b" label="5. COMMIT" sclass="k9mo" style="color:#DF4213" onClick="MELaudit_func(self.getId())" />
+			<button label="6. Export technician audit-report" sclass="k9mo" onClick="exportMELAuditForm(glob_sel_audit,3)" />
+			<separator width="5px" />
+			<button id="uploadtempgrn_b" label="7. Post specs-update + upload TempGRN" sclass="k9mo" style="color:#F41717;text-decoration:underline" onClick="MELaudit_func(self.getId())" visible="false" />
+			<button id="rwcoord_menu" label="8. RW Control" sclass="k9mo" style="color:#2279D5" visible="false" onClick="rwcoord_pop.open(self)" />
 		</hbox>
 		<separator height="3px" />
 		<div id="melauditlb_holder" />
@@ -753,9 +770,14 @@ if(sechand.allowedUser(useraccessobj.username,"MEL_RW_COORD_USERS"))
 	rwcoord_menu.setVisible(true);
 }
 
+if(useraccessobj.username.equals("harvin")) // 28/09/2015: only harvin can press the upload t.grn
+{
+	uploadtempgrn_b.setVisible(true);
+}
+
 if(useraccessobj.accesslevel == 9)
 {
-	Object[] abk = { admin_b, postspecs_b, postgrn_b, rwcoord_menu };
+	Object[] abk = { admin_b, postspecs_b, postgrn_b, rwcoord_menu, uploadtempgrn_b };
 	for(i=0; i<abk.length; i++)
 	{
 		abk[i].setVisible(true);

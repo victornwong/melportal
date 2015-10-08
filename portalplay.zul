@@ -172,11 +172,9 @@ void doFunc(Object iwhat)
 
 	<div sclass="shadowbox" style="background:#507DAD">
 	</div>
-		<div id="workbox" />
+	<div id="workbox" />
 	<div id="worksandbox" />
 	<div id="miscwindows" />
-
-
 </div>
 
 <zscript>

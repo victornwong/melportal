@@ -14,7 +14,7 @@
 <zscript>
 <![CDATA[
 MYTITLE = "MEL - Consignment Note Management";
-MYVERSION = "v0.1.2";
+MYVERSION = "v0.1.3";
 MYPANEL = "meluplcsgnpanel";
 
 /**
@@ -27,6 +27,7 @@ MYPANEL = "meluplcsgnpanel";
  * 14/08/2015: button to send notif email for audit-report complete and quotation-done - req by Nisha
  * 14/08/2015: add MEL inventory item popup-editor, user can change serial-no, mel-asset, proc-type, proc-speed - req by Nisha
  * 17/08/2015: export raw Excel temporary pricing by proc-spec/speed set by coordinator
+ * 28/09/2015: nisha req , summary of consignment/batch qty, received qty, unknown qty
  */
 import java.util.*;
 import java.text.*;
@@ -49,6 +50,7 @@ kiboo = new Generals(); sqlhand = new SqlFuncs(); lbhand = new ListboxHandler();
 guihand = new GuiFuncs(); luhand = new LookupFuncs(); dmshand = new DMSFuncs();
 gridhand = new GridHandler(); ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 
+TESTING_MODE = false;
 MEL_CSGN_PREFIX = "MEL";
 
 Object csgn_upload_data = null;
@@ -138,7 +140,8 @@ void doFunc(String itype)
 		if(Messagebox.show("Cancel this consignment: " + glob_sel_csgn, "Are you sure?",
 			Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
 
-		sqlstm = "update mel_csgn set mstatus='CANCEL' where origid=" + glob_sel_csgn;
+		sqlstm = "update mel_csgn set mstatus='CANCEL' where origid=" + glob_sel_csgn + ";" +
+		"delete from mel_inventory where parent_id=" + glob_sel_csgn + " and melgrn_id is null and audit_id is null;";
 
 		toggButts(true);
 		sendCsgn_Notif(2,glob_sel_csgn);
@@ -169,6 +172,12 @@ void doFunc(String itype)
 	{
 		sendCsgn_Notif(7,glob_sel_csgn);
 		add_RWAuditLog(JN_linkcode(),"", "Sent notification email to MEL for duplicates in consignment", unm);
+	}
+
+	if(itype.equals("notifrecvsummary_b")) // 28/09/2015: notify MEL on qty recv summary - req by Nisha
+	{
+		sendCsgn_Notif(8,glob_sel_csgn);
+		add_RWAuditLog(JN_linkcode(),"", "Sent summary of qty received to MEL on uploaded consignment", unm);
 	}
 
 	if(itype.equals("genpricing_b")) // 14/08/2015: try to generate items prices if proc-type and proc-speed was set properly
@@ -451,6 +460,7 @@ void consignmentMPF(String iwhat)
 			<button id="notifmelprice_b" label="Notify MEL prices completed" sclass="k9mo" onClick="doFunc(self.getId())" />
 			<button id="notifreport_b" label="Notify MEL report committed" sclass="k9mo" onClick="doFunc(self.getId())" />
 			<button id="notifdups_b" label="Notify MEL on duplicates consigment items" sclass="k9mo" onClick="doFunc(self.getId())" />
+			<button id="notifrecvsummary_b" label="Notify MEL on qty received summary" sclass="k9mo" onClick="doFunc(self.getId())" />
 			<separator bar="true" />
 			<button id="notifypart_b" label="Re-notify partner" sclass="k9mo" onClick="doFunc(self.getId())" />
 			<button id="shwauditlogs_b" label="Show audit-log" sclass="k9mo" onClick="adminFunc(self.getId())" />
@@ -554,7 +564,7 @@ void consignmentMPF(String iwhat)
 </style>
 
 <div width="1200px">
-<panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true" >
+<panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="none" collapsible="true" closable="true" >
 <panelchildren style="background:#65780E">
 
 <div sclass="shadowbox" style="background:#2e3436;">

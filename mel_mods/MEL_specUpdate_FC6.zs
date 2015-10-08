@@ -2,6 +2,13 @@ import org.victor.*;
 // MEL-GRN inventory management funcs - knockoff from goodsReceive_v2.zul(local GRN module)
 // knockoff from MELGRN_inventory.zs
 
+// FOCUS5010 table-refs
+// GRN_ACCOUNT_NO = "1251"; testing account
+GRN_ACCOUNT_NO = "2509"; // 0J0.mr000 MACQUARIE EQUIPMENT LEASING - AP
+GRN_EXTRAHEADEROFF = "u002c";
+GRN_EXTRAOFF = "u012c";
+GRN_VOUCHERTYPE = "1281";
+
 // 07/01/2015: knockoff from goodsReceive_v2.zul(local GRN module)
 // used by admin for now .. later put into another module to FAST add/minus stock
 // itype: 1=minus stock, 2=add stock
@@ -95,15 +102,21 @@ String updateInventory_AuditItems()
 
 				"insert into u0001 (extraid,productnameyh,palletnoyh,shipmentcodeyh) values (@maxid,@prodid," + AUDIT_PALLET_ID + ",'" + shpc + "'); " +
 
+				//"insert into ibals (code,date_,dep,qiss,qrec,val,qty2) " +
+				//"values (@maxid," + tdate + ",0,-1,1,1,1); " +
+
+				//"insert into ibals (code,date_,dep,qiss,qrec,val,qty2) " +
+				//"values (@maxid," + tdate + ",0,0,0,0," + qty + "); " +
+
 				"insert into ibals (code,date_,dep,qiss,qrec,val,qty2) " +
-				"values (@maxid," + tdate + ",0,0," + qty + ",0,0); " +
+				"values (@maxid," + tdate + ",0,0,0,0,0); " +
 
 				"end else begin " +
 				"set @_masterid = (select masterid from mr001 where code2='" + atg + "'); " +
 
 				// for RWMS, need this for EOL equips
 				"insert into ibals (code,date_,dep,qiss,qrec,val,qty2) " +
-				"values (@_masterid," + tdate + ",0,0," + qty + ",0,0); " +
+				"values (@_masterid," + tdate + ",0,0,0,0,0); " +
 				"update mr001 set name='" + itm + "',code='" + snm + "' where code2='" + atg + "';" +
 				"end;";
 
@@ -158,13 +171,6 @@ boolean postSpecs_LB()
 
 	return true;
 }
-
-// FOCUS5010 table-refs
-// GRN_ACCOUNT_NO = "1251"; testing account
-GRN_ACCOUNT_NO = "2509"; // 0J0.mr000 MACQUARIE EQUIPMENT LEASING - AP
-GRN_EXTRAHEADEROFF = "u002c";
-GRN_EXTRAOFF = "u012c";
-GRN_VOUCHERTYPE = "1281";
 
 void inject_GRN_Headers(String[] hdv)
 {
@@ -267,7 +273,7 @@ String inject_FC6GRN(String iasset_tags)
 		"insert into indta (salesid,quantity,stockvalue,rate,gross,qty2,subprocess,unit," +
 		"input0,output0,input1,output1,input2,output2,input3,output3," +
 		"input4,output4,input5,output5,input6,output6,input7,output7," +
-		"input8,output8,input9,output9) values ( @imaxid,1,0,0,0,1,0,0x00, " +
+		"input8,output8,input9,output9) values ( @imaxid,0,0,0,0,0,0,0x00, " +
 		"0,0,0,0,0,0,0,0," +
 		"0,0,0,0,0,0,0,0," +
 		"0,0,0,0);";

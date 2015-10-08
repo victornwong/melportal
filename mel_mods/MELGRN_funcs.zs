@@ -1,6 +1,10 @@
 import org.victor.*;
 // MEL-GRN general funcs
 
+RECEIVED_SERIALS_STYLE = "background:#2E60CE;font-size:9px;color:#ffffff";
+UNKNOWN_SERIALS_STYLE = "background:#DD1FD4;font-size:9px;color:#ffffff";
+DUPS_SERIALS_STYLE = "background:#E9E415;font-size:9px;";
+
 void toggButts(boolean iwhat)
 {
 	// notifprob_b
@@ -221,6 +225,7 @@ Object[] csgnasshd = // knockoff csgnFuncs.zs
 // Parse the serial-numbers scanned and sumbat
 // isn=the MEL serial-numbers, icsgn=unused at the moment, thought want to match against inventory the parent_csgn
 // 23/01/2015: req from lamos, scan asstag first then s/num
+// 28/09/2015: check dups inside listbox ONLY requested by harvin/lai/satish - higlite different color
 void importParse_MEL_snums(String isn, String icsgn)
 {
 	if(glob_sel_parentcsgn.equals("")) { guihand.showMessageBox("ERR: please tie MELGRN to MEL REF before parsing serial-numbers.."); return; }
@@ -257,12 +262,12 @@ void importParse_MEL_snums(String isn, String icsgn)
 					ngfun.popuListitems_Data(kabom,fl,ir);
 					if(ir.get("received") != null) // equip already received earlier
 					{
-						sty = "background:#2E60CE;font-size:9px;color:#ffffff";
+						sty = RECEIVED_SERIALS_STYLE;
 					}
 					unknownt = ir.get("unknown");
 					if(unknownt != null)
 					{
-						sty = (unknownt) ? "background:#CC2F2F;font-size:9px;color:#ffffff" : "";
+						sty = (unknownt) ? UNKNOWN_SERIALS_STYLE : "";
 					}
 				}
 				else
@@ -272,7 +277,7 @@ void importParse_MEL_snums(String isn, String icsgn)
 						kabom.add("---");
 					}
 					kabom.add(""); // the received-date colm
-					sty = "background:#CC2F2F;font-size:9px;color:#ffffff";
+					sty = ""; //background:#CC2F2F;font-size:9px;color:#ffffff
 				}
 
 				lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false",sty);
@@ -290,6 +295,36 @@ void importParse_MEL_snums(String isn, String icsgn)
 		} catch (Exception e) {}
 	}
 	k_howmanyscan_lbl.setValue("Parsed: " + scancount.toString() + " item(s)");
+
+	// 28/09/2015: check within listbox ONLY for dups
+	checkImportParse_serials();
+}
+
+// Check import/parse duplicate serial/asset-tags
+void checkImportParse_serials()
+{
+	newlb = impsns_holder.getFellowIfAny("impsn_lb");
+	if(newlb == null) { alert("nothing.."); return; }
+
+	HashMap lbc = new HashMap();
+	ts = newlb.getItems().toArray();
+	//alert(newlb + " :: " + ts.length);
+	kk = "";
+	for(i=0;i<ts.length;i++)
+	{
+		hilite = "";
+		d1 = lbhand.getListcellItemLabel(ts[i],1);
+		if(!lbc.containsKey(d1)) lbc.put(d1,1);
+		else { hilite = DUPS_SERIALS_STYLE; kk += "dups found: " + d1 + "\n"; }
+		d2 = lbhand.getListcellItemLabel(ts[i],2);
+		if(!lbc.containsKey(d2)) lbc.put(d2,1);
+		else { hilite = DUPS_SERIALS_STYLE; kk += "dups found: " + d2 + "\n"; }
+
+		if(!hilite.equals("")) ts[i].setStyle(hilite);
+		//kk += "d1: " + d1 + " d2: " + d2 + "\n";
+	}
+	//alert(lbc);
+	//debuglabel.setValue(kk);
 }
 
 void updateMEL_inventory(String igrn, String ibn)
@@ -436,7 +471,9 @@ void notifyCommitMELGRN(String iwhat)
 	csgnitm = getEquipCount_fromMELCSGN( r.get("parent_csgn"));
 	ec = getEquipCount_fromSerials( r.get("serial_numbers") );
 	subj = "[COMMIT] MELGRN: " + iwhat + " at " + r.get("rwlocation");
-	topeople = luhand.getLookups_ConvertToStr("MEL_RW_COORD",2,",");
+
+	topeople = "victor@rentwise.com";
+	if(!TESTING_MODE) topeople = luhand.getLookups_ConvertToStr("MEL_RW_COORD",2,",");
 	emsg =
 	"------------------------------------------------------" +
 	"\nMEL REF         : " + csgname +
@@ -445,6 +482,7 @@ void notifyCommitMELGRN(String iwhat)
 	"\nMELGRN          : " + iwhat +
 	"\nRW warehouse    : " + r.get("rwlocation") +
 	"\nEquips received : " + ec.toString() +
+	"\nNotes           : Goods Receive Phase" +
 	"\n\nPlease login to check and process ASAP." +
 	"\n------------------------------------------------------";
 

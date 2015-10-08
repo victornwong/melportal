@@ -1,13 +1,24 @@
 import org.victor.*;
 // Funcs used in MEL_specUpdate_v1.zul. Knockoff and modif for MEL
 
+/**
+ * Get MEL audit linked batch/consignment and qty audited
+ * @param  imeladt the MEL audit ID
+ * @return         rec with batch/consignment name and qty audited
+ */
+Object getMELAudit_summary(String imeladt)
+{
+	sqlstm = "select mc.csgn, (select count(origid) from mel_inventory where audit_id=ma.origid) as audit_qty " +
+	"from mel_audit ma left join mel_csgn mc on ma.parent_csgn = mc.origid where ma.origid=" + imeladt;
+	return sqlhand.gpSqlFirstRow(sqlstm);
+}
+
 Object getLookup_valuefield(String idisptext, int ifnum)
 {
 	String[] fnam = { "value1", "value2", "value3", "value4", "value5", "value6", "value7", "value8" };
 	sqlstm = "select top 1 " + fnam[ifnum-1] + " from lookups where disptext='" + idisptext + "';";
 	return sqlhand.gpSqlFirstRow(sqlstm);
 }
-
 
 item_row_counter = 1;
 
@@ -356,9 +367,14 @@ void showCheckstock_win(Div idiv) // knockoff from jobsheet_funcs.zs but modifie
 		lbhand.setDoubleClick_ListItems(newlb, checkitems_doubleclicker);
 }
 
-// Generate MEL audit-report from Harvin final template 02/02/2015
-// 11/03/2015: modif to either get mel_inventory by melgrn_id or audit_id
-// 16/03/2015: Lai gave the diminish values for the drop-downs - generate "SERVICE" and "CONDITION" columns as req by Colm
+/**
+ * Generate MEL audit-report from Harvin final template 02/02/2015
+ * 11/03/2015: modif to either get mel_inventory by melgrn_id or audit_id
+ * 16/03/2015: Lai gave the diminish values for the drop-downs - generate "SERVICE" and "CONDITION" columns as req by Colm
+ * 17/09/2015: Lai req export w/o pricings, for technicians to fillup pix or whatever manual
+ * @param iwhat parent_id or audit_id
+ * @param itype the type of output - 
+ */
 void exportMELAuditForm(String iwhat, int itype)
 {
 	sqlstm = "select * from mel_inventory "; 
@@ -369,6 +385,7 @@ void exportMELAuditForm(String iwhat, int itype)
 			sqlstm += " where parent_id=" + iwhat;
 			break;
 		case 2: // by audit_id
+		case 3: // same by MELAUDIT but maskout pricing at the end
 			saveSpecs_listbox(iwhat); // mel_specupdate_lb.zs
 			sqlstm += " where audit_id=" + iwhat;
 			break;
@@ -387,9 +404,7 @@ void exportMELAuditForm(String iwhat, int itype)
 	InputStream inp = new FileInputStream(inpfn);
 	HSSFWorkbook excelWB = new HSSFWorkbook(inp);
 	evaluator = excelWB.getCreationHelper().createFormulaEvaluator();
-	HSSFSheet sheet = excelWB.getSheetAt(0);
-	//HSSFSheet sheet = excelWB.createSheet("THINGS");
-
+	HSSFSheet sheet = excelWB.getSheetAt(0); //HSSFSheet sheet = excelWB.createSheet("THINGS");
 	Font wfont = excelWB.createFont(); wfont.setFontHeightInPoints((short)8); wfont.setFontName("Arial");
 
 	CellStyle tcellstyle =  excelWB.createCellStyle();
@@ -575,13 +590,17 @@ void exportMELAuditForm(String iwhat, int itype)
 		//try { condition_txt = condition_txt.substring(0,condition_txt.length()-2); } catch (Exception e) {}
 		excelInsertString(sheet,rowcount,meladtfields.length+2,condition_txt); // conditions column
 
-		excelInsertNumber(sheet,rowcount,meladtfields.length+3, mktprice);
-		excelInsertNumber(sheet,rowcount,meladtfields.length+4, totaldiminish.toString() );
+		if(itype != 3) // 17/09/2015: only NOT technician audit-report show pricings
+		{
+			debugbox.setValue("itm: " + pbitm + " :: marketprice: " + mktprice + "\n" + debugbox.getValue());
+			excelInsertNumber(sheet,rowcount,meladtfields.length+3, mktprice);
+			excelInsertNumber(sheet,rowcount,meladtfields.length+4, totaldiminish.toString() );
 
-		finalprice = mktpriceval - totaldiminish;
-		if( finalprice < 0) finalprice = 0.0;
+			finalprice = mktpriceval - totaldiminish;
+			if( finalprice < 0) finalprice = 0.0;
 
-		excelInsertNumber(sheet,rowcount,meladtfields.length+5, finalprice.toString() );
+			excelInsertNumber(sheet,rowcount,meladtfields.length+5, finalprice.toString() );
+		}
 
 		itemcount++;
 		rowcount++;
@@ -616,16 +635,32 @@ void notifyCommit_MELAUDIT(String iwhat)
 	*/
 }
 
+/**
+ * [notifyCommit_MELAUDIT_2 description]
+ * @param iwhat the MEL audit ID
+ */
 void notifyCommit_MELAUDIT_2(String iwhat)
 {
 	if(iwhat.equals("")) return;
+	kr = getMELAudit_summary(iwhat);
+	csgn = aqty = "";
+
+	try { csgn = kiboo.checkNullString(kr.get("csgn")); } catch (Exception e) {}
+	try { aqty = kr.get("audit_qty").toString(); } catch (Exception e) {}
+
 	//subj = topeople = emsg = "";
 	subj = "[COMMIT AUDIT-FORM] MELADT: " + iwhat;
-	topeople = luhand.getLookups_ConvertToStr("MEL_RW_COORD",2,",");
+
+	topeople = "victor@rentwise.com";
+	if(!TESTING_MODE)	topeople = luhand.getLookups_ConvertToStr("MEL_RW_COORD",2,",");
+
 	emsg =
 	"------------------------------------------------------" +
 	"\nMELADT          : " + iwhat +
-	"\n\nPlease login to post specs-update and Focus GRN" +
+	"\nBATCH/CSGN      : " + csgn +
+	"\nQty Audited     : " + aqty +
+	"\n\nThis is a notification only" +
 	"\n------------------------------------------------------";
 	gmail_sendEmail("", GMAIL_username, GMAIL_password, GMAIL_username, topeople, subj, emsg );
 }
+
