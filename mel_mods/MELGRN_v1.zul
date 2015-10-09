@@ -468,7 +468,7 @@ if(useraccessobj.accesslevel == 9)
 {
 	admin_b.setVisible(true);
 	admdelequip_b.setVisible(true);
-	grnid_tb.setValue("42"); // fast check
+	grnid_tb.setValue("54"); // fast check
 }
 
 

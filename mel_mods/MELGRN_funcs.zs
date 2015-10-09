@@ -287,9 +287,9 @@ void importParse_MEL_snums(String isn, String icsgn)
 			}
 			else
 			{
-				newlb.setParent(null); // remove listbox if dups found!!
-				guihand.showMessageBox("ERR: duplicate serial-number found : " + kns[i+1]);
-				return;
+				//newlb.setParent(null); // remove listbox if dups found!!
+				//guihand.showMessageBox("ERR: duplicate serial-number found : " + kns[i+1]);
+				//return;
 			}
 			i++;
 		} catch (Exception e) {}
@@ -335,6 +335,8 @@ void updateMEL_inventory(String igrn, String ibn)
 	shwdate = kiboo.todayISODateString();
 	sqlstm = snums = satgs = "";
 
+	dbg = "";
+
 	for(i=0; i<ki.length; i++)
 	{
 		xastg = lbhand.getListcellItemLabel(ki[i],PARSE_ASSETTAG_POS); // asset-tag
@@ -344,27 +346,33 @@ void updateMEL_inventory(String igrn, String ibn)
 
 		if(xcsgn.equals("---")) // equip not found in any csgn, save to later notify whoever
 		{
+			// 09/10/2015: req Harvin, just tie unknown serial from unknown consignment to current selected GRN's consignment
+			injsql = "insert into mel_inventory (parent_id,serial_no) values (" + glob_sel_parentcsgn + ",'" + xsn + "');";
+			sqlhand.gpSqlExecuter(injsql);
+
 			sn_notin_inventory.add(xsn);
-			satgs += xastg + "\n";
 		}
-		else
+
+		/* 07/09/2015: take out this control logic - Lai req to allow everything through
+		if(!xdr.equals("")) // if equip already received earlier - problem!!
 		{
-			/* 07/09/2015: take out this control logic - Lai req to allow everything through
-			if(!xdr.equals("")) // if equip already received earlier - problem!!
-			{
-				guihand.showMessageBox("ERR: some equipment(s) already being received earlier. Cannot proceed");
-				return;
-			}
-			*/
-			snums += xsn + "\n";
-			satgs += xastg + "\n";
-
-			sqlstm += "update mel_inventory set batch_no='" + ibn + "', rw_assettag='" + xastg + "', melgrn_id=" + igrn +
-			" where serial_no='" + xsn + "' and parent_id=" + xcsgn + ";";
-
-			//lbhand.setListcellItemLabel(ki[i],PARSE_DATERECEIVED_POS,shwdate); // show recv date -used when commit GRN later
+			guihand.showMessageBox("ERR: some equipment(s) already being received earlier. Cannot proceed");
+			return;
 		}
+		*/
+	
+		dbg += xsn + " :: " + xastg + "\n";
+
+		snums += xsn + "\n";
+		satgs += xastg + "\n";
+
+		sqlstm += "update mel_inventory set batch_no='" + ibn + "', rw_assettag='" + xastg + "', melgrn_id=" + igrn +
+		" where serial_no='" + xsn + "';"; // and parent_id=" + xcsgn + ";";
+
+		//lbhand.setListcellItemLabel(ki[i],PARSE_DATERECEIVED_POS,shwdate); // show recv date -used when commit GRN later
 	}
+
+	//alert(dbg); return;
 
 	sqlstm += "update mel_grn set serial_numbers='" + snums + "', rw_asset_tags='" + satgs + "' where origid=" + igrn + ";";
 
