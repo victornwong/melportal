@@ -375,22 +375,26 @@ void showCheckstock_win(Div idiv) // knockoff from jobsheet_funcs.zs but modifie
  * @param iwhat parent_id or audit_id
  * @param itype the type of output - 
  */
-void exportMELAuditForm(String iwhat, int itype)
+void exportMELAuditForm(String iwhat, int itype, String iparentcsgn)
 {
-	sqlstm = "select * from mel_inventory "; 
+	sqlstm = "select *, (select csgn from mel_csgn where origid=mi.parent_id) as csgn_name from mel_inventory mi  " +
+	"where mi.audit_id=" + iwhat + " and mi.parent_id=" + iparentcsgn + " order by mi.rw_assettag";
+
+	/* 12/10/2015: remove these options to only extract items by audit-id and parent-csgn
 	switch(itype)
 	{
 		case 1: // by parent_id = mel_csgn.origid
 			//saveSpecs(); // save latest before audit-form generation
-			sqlstm += " where parent_id=" + iwhat;
+			sqlstm += " where mi.parent_id=" + iwhat;
 			break;
 		case 2: // by audit_id
 		case 3: // same by MELAUDIT but maskout pricing at the end
 			saveSpecs_listbox(iwhat); // mel_specupdate_lb.zs
-			sqlstm += " where audit_id=" + iwhat;
+			sqlstm += " where mi.audit_id=" + iwhat;
 			break;
 	}
-	sqlstm += " order by rw_assettag";
+	*/
+
 	rcs = sqlhand.gpSqlGetRows(sqlstm);
 	if(rcs.size() == 0)
 	{
@@ -416,7 +420,8 @@ void exportMELAuditForm(String iwhat, int itype)
 
 	String[] meladtfields = { // as defined by Harvin 02/02/2015
 		"contract_no", // Contract
-		"batch_no", // Batch no
+		//"batch_no", // Batch no
+		"csgn_name",
 		"rw_assettag", // RW asset-tag
 		"serial_no", // Serial no
 		"mel_asset", // Asset Tag (MEL Ref)

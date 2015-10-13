@@ -52,32 +52,44 @@ void saveSpecs_listbox(String iadt)
 	//guihand.showMessageBox("Specs saved..");
 }
 
-void showMELADT_meta(String iwhat)
+void showMEL_audititems(String iauditid, String iparentcsgn)
 {
-	workarea.setVisible(true);
-	meladt_header.setValue("MELADT: " + iwhat);
-	toggButts_specupdate( (glob_sel_stat.equals("COMMIT")) ? true : false );
-
 	newlb = lbhand.makeVWListbox_Width(adtitems_holder, adtitemshds, "audititems_lb", 20);
 	newlb.setMultiple(true); newlb.setCheckmark(true);
 
-	sqlstm = "select * from mel_inventory where audit_id=" + iwhat + " order by rw_assettag";
+	byparent = " and parent_id=" + iparentcsgn;
+	if(iparentcsgn.equals("")) byparent = "";
+
+	sqlstm = "select * from mel_inventory where audit_id=" + iauditid + byparent + " order by rw_assettag";
 	rcs = sqlhand.gpSqlGetRows(sqlstm);
 	if(rcs.size() != 0)
 	{
 		ArrayList kabom = new ArrayList();
 		for(d : rcs) // show 'em mel_inventory items with audit_id linked
 		{
-			kabom.add("999"); // row count
+			kabom.add("0"); // row count
 			ngfun.popuListitems_Data(kabom,audititems_lb_fl,d);
+			kabom.add(d.get("origid").toString());
 			lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 			kabom.clear();
 		}
 		refresh_Items_rowcount();
 	}
+}
 
+/**
+ * Show ADT items
+ * @param iauditid    the selected audit-ID
+ * @param iparentcsgn inventory belonging to selected consignment/batch
+ */
+void showMELADT_meta(String iauditid, String iparentcsgn)
+{
+	workarea.setVisible(true);
+	meladt_header.setValue("MELADT: " + iauditid);
+	toggButts_specupdate( (glob_sel_stat.equals("COMMIT")) ? true : false );
+	showMEL_audititems(iauditid,iparentcsgn);
 	show_CSGNAudit_itemcount(glob_sel_parentcsgn);
-	fillDocumentsList(documents_holder,MELAUDIT_PREFIX,iwhat);
+	fillDocumentsList(documents_holder,MELAUDIT_PREFIX,iauditid);
 }
 
 Object[] melaudithds =
@@ -105,7 +117,7 @@ class auditcliker implements org.zkoss.zk.ui.event.EventListener
 		glob_sel_parentcsgn = lbhand.getListcellItemLabel(isel,CSGN_POS);
 		glob_sel_stat = lbhand.getListcellItemLabel(isel,ADTSTAT_POS);
 		glob_sel_tempgrn = lbhand.getListcellItemLabel(isel,TGRN_POS);
-		showMELADT_meta(glob_sel_audit);
+		showMELADT_meta(glob_sel_audit,glob_sel_parentcsgn);
 	}
 }
 auditclik = new auditcliker();
@@ -186,13 +198,13 @@ Object[] adtitemshds =
 	new listboxHeaderWidthObj("MEL item",true,"200px"),
 	new listboxHeaderWidthObj("RW Stockname",true,"200px"),
 
-	new listboxHeaderWidthObj("Grd",true,"50px"),
+	new listboxHeaderWidthObj("Grd",true,"50px"), // 5
 	new listboxHeaderWidthObj("Brand",true,"90px"),
 	new listboxHeaderWidthObj("Type",true,"50px"),
 	new listboxHeaderWidthObj("Model",true,"90px"),
 	new listboxHeaderWidthObj("Proc / Monitor",true,"90px"),
 
-	new listboxHeaderWidthObj("P.Speed / M.Size",true,""),
+	new listboxHeaderWidthObj("P.Speed / M.Size",true,""), // 10
 	new listboxHeaderWidthObj("M.Type",true,""),
 	new listboxHeaderWidthObj("Color",true,""),
 	new listboxHeaderWidthObj("Case",true,""),
@@ -202,43 +214,40 @@ Object[] adtitemshds =
 	new listboxHeaderWidthObj("HDD",true,""),
 	new listboxHeaderWidthObj("CDROM1",true,""),
 	new listboxHeaderWidthObj("Comment",true,""),
-	new listboxHeaderWidthObj("Webcam",true,""),
+	new listboxHeaderWidthObj("Webcam",true,""), // 20
 	new listboxHeaderWidthObj("B.Tooth",true,"50px"),
 	new listboxHeaderWidthObj("F.Print",true,"50px"),
 	new listboxHeaderWidthObj("C.Reader",true,"50px"),
 
 	new listboxHeaderWidthObj("Barcode",true,"40px"),
 	new listboxHeaderWidthObj("Notes",true,""),
-	new listboxHeaderWidthObj("Operability1",true,""),
-	new listboxHeaderWidthObj("Operability2",true,""),
-	new listboxHeaderWidthObj("Operability3",true,""),
-	new listboxHeaderWidthObj("Operability4",true,""),
-	new listboxHeaderWidthObj("Operability5",true,""),
-	new listboxHeaderWidthObj("Appearance1",true,""),
-	new listboxHeaderWidthObj("Appearance2",true,""),
-	new listboxHeaderWidthObj("Appearance3",true,""),
-	new listboxHeaderWidthObj("Appearance4",true,""),
-	new listboxHeaderWidthObj("Appearance5",true,""),
-	new listboxHeaderWidthObj("Completeness1",true,""),
-	new listboxHeaderWidthObj("Completeness2",true,""),
-	new listboxHeaderWidthObj("Completeness3",true,""),
-	new listboxHeaderWidthObj("Completeness4",true,""),
-	new listboxHeaderWidthObj("Completeness5",true,""),
+	new listboxHeaderWidthObj("Operability1",true,""), new listboxHeaderWidthObj("Operability2",true,""),
+	new listboxHeaderWidthObj("Operability3",true,""), new listboxHeaderWidthObj("Operability4",true,""),
+	new listboxHeaderWidthObj("Operability5",true,""), // 30
+	new listboxHeaderWidthObj("Appearance1",true,""), new listboxHeaderWidthObj("Appearance2",true,""),
+	new listboxHeaderWidthObj("Appearance3",true,""), new listboxHeaderWidthObj("Appearance4",true,""),
+	new listboxHeaderWidthObj("Appearance5",true,""), // 35
+	new listboxHeaderWidthObj("Completeness1",true,""), new listboxHeaderWidthObj("Completeness2",true,""),
+	new listboxHeaderWidthObj("Completeness3",true,""), new listboxHeaderWidthObj("Completeness4",true,""),
+	new listboxHeaderWidthObj("Completeness5",true,""), // 40
 
 	new listboxHeaderWidthObj("Grade",true,"50px"),
 	new listboxHeaderWidthObj("Form factor",true,""),
 	new listboxHeaderWidthObj("Case color",true,""),
 	new listboxHeaderWidthObj("Laptop screen size",true,""),
-	new listboxHeaderWidthObj("HDD size",true,""),
+	new listboxHeaderWidthObj("HDD size",true,""), // 45
 	new listboxHeaderWidthObj("RAM size",true,""),
 	new listboxHeaderWidthObj("RAM sticks",true,""),
 	new listboxHeaderWidthObj("DIMM slot",true,""),
 	new listboxHeaderWidthObj("OS",true,""),
-	new listboxHeaderWidthObj("Media drives",true,""),
+	new listboxHeaderWidthObj("Media drives",true,""), // 50
 	new listboxHeaderWidthObj("HDD wiped",true,""),
 	new listboxHeaderWidthObj("HDD destroyed",true,""),
 	new listboxHeaderWidthObj("HDD serial",true,""),
+	new listboxHeaderWidthObj("origid",true,""), // 54 for admin to juggle mel_inventory
 };
+
+ADT_INVENTORY_ORIGID = 54;
 
 void show_CSGNAudit_itemcount(String icsgn)
 {

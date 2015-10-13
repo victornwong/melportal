@@ -35,6 +35,7 @@ MYPANEL = "melitmspecupdpanl";
  * 17/09/2015: Lai req export w/o pricings, for technicians to fillup pix or whatever manual
  * 28/09/2015: only Harvin can press the upload t.grn and post-spec button
  * 06/10/2015: harvin req to put portal username into t.grn receivedbyyh and shipment-code into newshipmentcodeyh
+ * 12/10/2015: modif MEL_specUpdate_funcs.exportMELAuditForm() to get items by audit-id and parent-csgn ONLY
  */
 import java.util.*;
 import java.text.*;
@@ -310,6 +311,27 @@ void adminFunc(String itype)
 	if(itype.equals("sendcomitnotif_b"))
 	{
 		notifyCommit_MELAUDIT_2(glob_sel_audit);
+	}
+
+	if(itype.equals("delfrominventory_b")) // delete selected mel-inventory item - uses adtitemshds.origid
+	{
+		ts = adtitems_holder.getFellowIfAny("audititems_lb");
+		if(ts == null) return;
+
+		if(Messagebox.show("This will hard-delete selected items from mel-inventory..", "Are you sure?",
+			Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) != Messagebox.YES) return;
+
+		ats = ts.getSelectedItems().toArray();
+		iorigs = "";
+		for(i=0;i<ats.length;i++)
+		{
+			iorigs += lbhand.getListcellItemLabel(ats[i],ADT_INVENTORY_ORIGID) + ",";
+			ats[i].setParent(null);
+		}
+
+		try { iorigs = iorigs.substring(0,iorigs.length()-1); } catch (Exception e) {}
+		sqlstm = "delete from mel_inventory where origid in (" + iorigs + ");";
+		refresh_Items_rowcount();
 	}
 
 	if(!sqlstm.equals(""))
@@ -611,6 +633,8 @@ void showCSGN_breakdown(String icsgn)
 			<button id="clrtempgrn_b" label="Clear T.GRN entry" sclass="k9" onClick="adminFunc(self.getId())" />
 			<button id="sendcomitnotif_b" label="Send commit notif email" sclass="k9" onClick="adminFunc(self.getId())" />
 			<separator height="5px" />
+			<button id="delfrominventory_b" label="Delete from mel-inventory db" sclass="k9" onClick="adminFunc(self.getId())" />
+			<separator height="5px" />
 			<button id="postspecs_b" label="1. Post specs-update FC6" sclass="k9mo" style="color:#F41717;text-decoration:underline" onClick="MELaudit_func(self.getId())" visible="false" />
 			<button id="postgrn_b" label="2. Upload into FC6 Temp.GRN" sclass="k9mo" style="color:#F41717;text-decoration:underline" onClick="MELaudit_func(self.getId())" visible="false" />
 		</vbox>
@@ -620,8 +644,8 @@ void showCSGN_breakdown(String icsgn)
 <popup id="rwcoord_pop">
 	<div sclass="shadowbox" style="background:#6590AA">
 		<vbox>
-			<button id="expauditform_b" label="Export audit by MELADT" sclass="k9mo" style="color:#6AB337" onClick="rwcoord_pop.close(); exportMELAuditForm(glob_sel_audit,2)" />
-			<button id="expauditcsgn_b" label="Export audit by CSGN" sclass="k9mo" style="color:#6AB337" onClick="rwcoord_pop.close(); exportMELAuditForm(glob_sel_audit,1)" />
+			<button id="expauditform_b" label="Export audit by MELADT" sclass="k9mo" style="color:#6AB337" onClick="rwcoord_pop.close(); exportMELAuditForm(glob_sel_audit,2,glob_sel_parentcsgn)" />
+			<button visible="false" id="expauditcsgn_b" label="Export audit by CSGN" sclass="k9mo" style="color:#6AB337" onClick="rwcoord_pop.close(); exportMELAuditForm(glob_sel_audit,1,glob_sel_parentcsgn)" />
 			<separator height="5px" />
 			<button id="shwauditlogs_b" label="AuditLog" sclass="k9mo" onClick="MELaudit_func(self.getId())" />
 			<button id="clraudit_b" label="Clear status to DRAFT" sclass="k9mo" onClick="rwcoord_pop.close(); adminFunc(self.getId())" />
@@ -689,7 +713,7 @@ void showCSGN_breakdown(String icsgn)
 			<button label="2. Set CSGN" sclass="k9mo" onClick="showCSGNlist(user_location); setcsgn_pop.open(self)" />
 			<button label="3. Remarks" sclass="k9mo" onClick="setremarks_pop.open(self)" />
 			<button id="commitaudit_b" label="5. COMMIT" sclass="k9mo" style="color:#DF4213" onClick="MELaudit_func(self.getId())" />
-			<button label="6. Export technician audit-report" sclass="k9mo" onClick="exportMELAuditForm(glob_sel_audit,3)" />
+			<button label="6. Export technician audit-report" sclass="k9mo" onClick="exportMELAuditForm(glob_sel_audit,3,glob_sel_parentcsgn)" />
 			<separator width="5px" />
 			<button id="uploadtempgrn_b" label="7. Post specs-update + upload TempGRN" sclass="k9mo" style="color:#F41717;text-decoration:underline" onClick="MELaudit_func(self.getId())" visible="false" />
 			<button id="rwcoord_menu" label="8. RW Control" sclass="k9mo" style="color:#2279D5" visible="false" onClick="rwcoord_pop.open(self)" />
