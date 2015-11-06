@@ -315,7 +315,7 @@ void drawAudit_MPF_things()
 				ngfun.gpMakeTextbox(nrw, mcid[i], "", k9, "95%", textboxnulldrop);
 			}
 
-			//ngfun.gpMakeButton(nrw, mbtn[i], "Upd", k9, mpfbuttoncliker);
+			ngfun.gpMakeButton(nrw, mbtn[i], "Upd", k9, mpfbuttoncliker);
 		} catch (ArrayIndexOutOfBoundsException e) {}
 
 		try // MEL specs MPF
@@ -333,7 +333,7 @@ void drawAudit_MPF_things()
 			{
 				ngfun.gpMakeTextbox(melnrw, melcid[i], "", k9, "95%", textboxnulldrop);
 			}
-			//ngfun.gpMakeButton(melnrw, melbtn[i], "Upd", k9, mpfbuttoncliker);
+			ngfun.gpMakeButton(melnrw, melbtn[i], "Upd", k9, mpfbuttoncliker);
 		} catch (ArrayIndexOutOfBoundsException e) {}
 	}
 

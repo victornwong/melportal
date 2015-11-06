@@ -542,6 +542,13 @@ void showCSGN_breakdown(String icsgn)
 	}
 }
 
+void exportLamSpecUpdate()
+{
+	try { // adtitemshds : MEL_specUpdate_LB.zs
+	exportExcelFromListbox(audititems_lb, kasiexport, adtitemshds, "specuupdate.xls","specupdate");
+	} catch (Exception e) {}
+}
+
 ]]>
 </zscript>
 
@@ -717,6 +724,7 @@ void showCSGN_breakdown(String icsgn)
 			<separator width="5px" />
 			<button id="uploadtempgrn_b" label="7. Post specs-update + upload TempGRN" sclass="k9mo" style="color:#F41717;text-decoration:underline" onClick="MELaudit_func(self.getId())" visible="false" />
 			<button id="rwcoord_menu" label="8. RW Control" sclass="k9mo" style="color:#2279D5" visible="false" onClick="rwcoord_pop.open(self)" />
+			<button label="Export spec-update" sclass="k9mo" onClick="exportLamSpecUpdate()" />
 		</hbox>
 		<separator height="3px" />
 		<div id="melauditlb_holder" />
