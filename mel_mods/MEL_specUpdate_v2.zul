@@ -640,8 +640,6 @@ void exportLamSpecUpdate()
 			<button id="clrtempgrn_b" label="Clear T.GRN entry" sclass="k9" onClick="adminFunc(self.getId())" />
 			<button id="sendcomitnotif_b" label="Send commit notif email" sclass="k9" onClick="adminFunc(self.getId())" />
 			<separator height="5px" />
-			<button id="delfrominventory_b" label="Delete from mel-inventory db" sclass="k9" onClick="adminFunc(self.getId())" />
-			<separator height="5px" />
 			<button id="postspecs_b" label="1. Post specs-update FC6" sclass="k9mo" style="color:#F41717;text-decoration:underline" onClick="MELaudit_func(self.getId())" visible="false" />
 			<button id="postgrn_b" label="2. Upload into FC6 Temp.GRN" sclass="k9mo" style="color:#F41717;text-decoration:underline" onClick="MELaudit_func(self.getId())" visible="false" />
 		</vbox>
@@ -754,6 +752,7 @@ void exportLamSpecUpdate()
 						<button id="removeitem_b" label="Remove items" sclass="k9mo" onClick="MELaudit_func(self.getId())" />
 						<button id="savespecs_b" label="SAVE specs" sclass="k9mo" onClick="MELaudit_func(self.getId())" />
 						<button label="CSGN breakdown" sclass="k9mo" onClick="showCSGN_breakdown(glob_sel_parentcsgn); csgnbreakdown_pop.open(self)" />
+						<button id="delfrominventory_b" label="Delete from mel-inventory db" sclass="k9mo" style="color:#EF0808" onClick="adminFunc(self.getId())" />
 					</hbox>
 					<separator height="3px" />
 					<div style="overflow:auto;overflow-y:hidden" >

@@ -56,6 +56,10 @@ void setMELCSGN_flags(int itype, String iwhat)
 	}
 }
 
+/**
+ * [rawUploadConsignment description]
+ * 30/11/2015: bigger file will be uploaded as non ByteArrayInputStream, thus need to add codes to handle - check below
+ */
 void rawUploadConsignment()
 {
 	if(glob_sel_csgn.equals("")) return;
@@ -68,13 +72,30 @@ void rawUploadConsignment()
 		return;
 	}
 
-	byte[] kry = new byte[csgn_upload_data.thefiledata.available()];
-	csgn_upload_data.thefiledata.read( kry,0,csgn_upload_data.thefiledata.available() );
-	tfnm = session.getWebApp().getRealPath("sharedocs/melcsgn/" + csgn_upload_data.thefilename);
-	outstream = new FileOutputStream(tfnm);
-	outstream.write(kry);
-	outstream.close();
-	csgn_upload_data.thefiledata.reset();
+	kry = null;
+
+	if(csgn_upload_data.thefiledata instanceof ByteArrayInputStream) // 30/11/2015: to handle bigger file size uploads
+	{
+		bytsize = csgn_upload_data.thefiledata.available();
+		kry = new byte[bytsize];
+		csgn_upload_data.thefiledata.read( kry, 0, bytsize );
+	}
+	else
+	{
+		bytsize = csgn_upload_data.thefiledata.length;
+		kry = csgn_upload_data.thefiledata;	
+	}
+
+	if(kry != null)
+	{
+		tfnm = session.getWebApp().getRealPath("sharedocs/melcsgn/" + csgn_upload_data.thefilename);
+		outstream = new FileOutputStream(tfnm);
+		outstream.write(kry);
+		outstream.close();
+
+		if(csgn_upload_data.thefiledata instanceof ByteArrayInputStream)
+			csgn_upload_data.thefiledata.reset();
+	}
 
 	try
 	{
