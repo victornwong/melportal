@@ -496,7 +496,7 @@ void exportMELAuditForm(String iwhat, int itype, String iparentcsgn)
 				for(n=0; n<mops.length; n++)
 				{
 					ck = kiboo.checkNullString(d.get(mops[n]));
-					if( !ck.equals("") && !ck.equals("TESTED_OK") )
+					if( !ck.equals("") && !ck.equals("GOOD") )
 					{
 						kk += ", " + ck;
 						dvr = getLookup_valuefield(ck,1);
@@ -568,7 +568,7 @@ void exportMELAuditForm(String iwhat, int itype, String iparentcsgn)
 				for(n=0; n<mops.length; n++)
 				{
 					ck = kiboo.checkNullString(d.get(mops[n]));
-					if( !ck.equals("") && !ck.equals("COMPLETE") )
+					if( !ck.equals("") && !ck.equals("GOOD") )
 					{
 						kk += ", " + ck;
 						dvr = getLookup_valuefield(ck,1);

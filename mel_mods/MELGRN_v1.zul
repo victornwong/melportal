@@ -16,7 +16,7 @@
 <zscript>
 <![CDATA[
 MYTITLE = "MEL - Goods Receival";
-MYVERSION = "v0.1.2";
+MYVERSION = "v0.1.3";
 MYPANEL = "melgrnthingpael";
 /**
  * @title MEL goods receival
@@ -29,6 +29,7 @@ MYPANEL = "melgrnthingpael";
  * 	
  * 28/09/2015: auto check for dups within listbox ONLY for import/parse
  * 28/09/2015: put hi-lite bar description
+ * 09/12/2015: check serial-no exist in mel_inventory, don't insert . MELGRN_funcs.updateMEL_inventory()
  * 
  */
 import java.util.*;
@@ -470,7 +471,6 @@ if(useraccessobj.accesslevel == 9)
 	admdelequip_b.setVisible(true);
 	grnid_tb.setValue("54"); // fast check
 }
-
 
 ]]>
 </zscript>

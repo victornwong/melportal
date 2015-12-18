@@ -347,9 +347,14 @@ void updateMEL_inventory(String igrn, String ibn)
 		if(xcsgn.equals("---")) // equip not found in any csgn, save to later notify whoever
 		{
 			// 09/10/2015: req Harvin, just tie unknown serial from unknown consignment to current selected GRN's consignment
-			injsql = "insert into mel_inventory (parent_id,serial_no) values (" + glob_sel_parentcsgn + ",'" + xsn + "');";
-			sqlhand.gpSqlExecuter(injsql);
+			// 09/12/2015: check serial-no exist in mel_inventory, don't insert
+			injsql =
+			"if not exists (select 1 from mel_inventory where serial_no='" + xsn + "') " +
+			"begin " +
+			"insert into mel_inventory (parent_id,serial_no) values (" + glob_sel_parentcsgn + ",'" + xsn + "'); " +
+			"end;";
 
+			sqlhand.gpSqlExecuter(injsql);
 			sn_notin_inventory.add(xsn);
 		}
 
@@ -360,9 +365,7 @@ void updateMEL_inventory(String igrn, String ibn)
 			return;
 		}
 		*/
-	
-		dbg += xsn + " :: " + xastg + "\n";
-
+		//dbg += xsn + " :: " + xastg + "\n";
 		snums += xsn + "\n";
 		satgs += xastg + "\n";
 
@@ -371,9 +374,6 @@ void updateMEL_inventory(String igrn, String ibn)
 
 		//lbhand.setListcellItemLabel(ki[i],PARSE_DATERECEIVED_POS,shwdate); // show recv date -used when commit GRN later
 	}
-
-	//alert(dbg); return;
-
 	sqlstm += "update mel_grn set serial_numbers='" + snums + "', rw_asset_tags='" + satgs + "' where origid=" + igrn + ";";
 
 	if(sn_notin_inventory.size() > 0) // some unknown snums found -- save 'em into grn-rec and send notif
