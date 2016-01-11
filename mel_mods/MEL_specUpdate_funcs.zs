@@ -337,18 +337,20 @@ void showCheckstock_win(Div idiv) // knockoff from jobsheet_funcs.zs but modifie
 	{
 		new listboxHeaderWidthObj("No.",true,"40px"),
 		new listboxHeaderWidthObj("Items found",true,""),
-		new listboxHeaderWidthObj("Type",true,"40px"),
+		//new listboxHeaderWidthObj("Type",true,"40px"),
 	};
-	String[] fl_t1 = { "name", "item" };
+	String[] fl_t1 = { "name" }; // , "item" 
 
 	kn = kiboo.replaceSingleQuotes( chkstkname_tb.getValue().trim() );
 	if(kn.equals("")) return;
 
 	Listbox newlb = lbhand.makeVWListbox_Width(idiv, cstkhds1, "chkstock_lb", 3);
 
-	csqlstm = "select distinct name,item from partsall_0 " +
-	"where name like '%" + kn + "%' group by name,item order by item,name";
-
+	/*
+		csqlstm = "select distinct name,item from partsall_0 " +
+		"where name like '%" + kn + "%' group by name,item order by item,name";
+	*/
+	csqlstm = "select distinct name from mr008 where name like '%" + kn + "%' order by name"; // 23/12/2015: use mr008 product-name instead from partsall_0
 	r = sqlhand.rws_gpSqlGetRows(csqlstm);
 	if(r.size() == 0) return;
 	newlb.setMold("paging"); newlb.setRows(20);
@@ -473,9 +475,18 @@ void exportMELAuditForm(String iwhat, int itype, String iparentcsgn)
 				mktpriceval = Float.parseFloat(mktprice);
 			}
 		}
+		//alert("here: " + d);
+		//if(d.get("serial_no").equals("CNT20440H8")) alert("data: " + d);
+
+		// 08/01/2016: This 3 defs used to check and trim same string to 1 word - req by Nisha
+		OPERABILITY_DEFAULT = "TESTED_OK";
+		APPEARANCE_DEFAULT = "GOOD";
+		COMPLETENESS_DEFAULT = "COMPLETE";
 
 		for(i=0; i<meladtfields.length; i++)
 		{
+			//if(d.get("serial_no").equals("CNT20440H8")) alert("meladtfields: " + meladtfields[i]);
+
 			kk = "";
 			if( meladtfields[i].equals("m_operability") ) // concatenate the 5 columns in db. Pretty ugly coding
 			{
@@ -496,7 +507,7 @@ void exportMELAuditForm(String iwhat, int itype, String iparentcsgn)
 				for(n=0; n<mops.length; n++)
 				{
 					ck = kiboo.checkNullString(d.get(mops[n]));
-					if( !ck.equals("") && !ck.equals("GOOD") )
+					if( !ck.equals("") && !ck.equals(OPERABILITY_DEFAULT) )
 					{
 						kk += ", " + ck;
 						dvr = getLookup_valuefield(ck,1);
@@ -532,7 +543,7 @@ void exportMELAuditForm(String iwhat, int itype, String iparentcsgn)
 				for(n=0; n<mops.length; n++)
 				{
 					ck = kiboo.checkNullString(d.get(mops[n]));
-					if( !ck.equals("") && !ck.equals("GOOD") )
+					if( !ck.equals("") && !ck.equals(APPEARANCE_DEFAULT) )
 					{
 						kk += ", " + ck;
 						dvr = getLookup_valuefield(ck,1);
@@ -568,7 +579,7 @@ void exportMELAuditForm(String iwhat, int itype, String iparentcsgn)
 				for(n=0; n<mops.length; n++)
 				{
 					ck = kiboo.checkNullString(d.get(mops[n]));
-					if( !ck.equals("") && !ck.equals("GOOD") )
+					if( !ck.equals("") && !ck.equals(COMPLETENESS_DEFAULT) )
 					{
 						kk += ", " + ck;
 						dvr = getLookup_valuefield(ck,1);
@@ -590,6 +601,7 @@ void exportMELAuditForm(String iwhat, int itype, String iparentcsgn)
 			}
 			excelInsertString(sheet,rowcount,i+1,kk);
 		}
+
 		excelInsertString(sheet,rowcount,meladtfields.length+1,"NO SERVICE"); // service column
 		//try { condition_txt = condition_txt.substring(0,condition_txt.length()-2); } catch (Exception e) {}
 		excelInsertString(sheet,rowcount,meladtfields.length+2,condition_txt); // conditions column

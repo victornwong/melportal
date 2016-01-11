@@ -57,11 +57,14 @@ void showMEL_audititems(String iauditid, String iparentcsgn)
 	newlb = lbhand.makeVWListbox_Width(adtitems_holder, adtitemshds, "audititems_lb", 20);
 	newlb.setMultiple(true); newlb.setCheckmark(true);
 
-	byparent = " and parent_id=" + iparentcsgn;
-	if(iparentcsgn.equals("")) byparent = "";
+	// 07/01/2016: disabled this 2 lines to list all audit-items by audit-voucher-no. , not checking for consignment parent
+	//byparent = " and parent_id=" + iparentcsgn;
+	//if(iparentcsgn.equals("")) byparent = "";
+	byparent = "";
 
 	sqlstm = "select * from mel_inventory where audit_id=" + iauditid + byparent + " order by rw_assettag";
 	rcs = sqlhand.gpSqlGetRows(sqlstm);
+	//alert(sqlstm + " :: " + rcs);
 	if(rcs.size() != 0)
 	{
 		ArrayList kabom = new ArrayList();
@@ -291,15 +294,20 @@ void addAsset_ToMELADT(String iatg, String icsgn)
 		return;
 	}
 
-	sqlstm = "select * from mel_inventory where rw_assettag='" + iatg + "' and parent_id=" + icsgn;
-	//  + " and audit_id is null;"
+	/* 22/12/2015: req by Harvin, remove the check against MEL-CSGN
+		sqlstm = "select * from mel_inventory where rw_assettag='" + iatg + "' and parent_id=" + icsgn;
+		//  + " and audit_id is null;"
+		r = sqlhand.gpSqlFirstRow(sqlstm); // get mel_inventory rec by iatg
+		//alert(sqlstm + " :: " + r);
+		if(r == null)
+		{
+			guihand.showMessageBox("ERR: Cannot get record, either invalid asset-tag or wrong CSGN or already in a different audit-form..");
+			return;	
+		}
+	*/
+
+	sqlstm = "select * from mel_inventory where rw_assettag='" + iatg + "'";
 	r = sqlhand.gpSqlFirstRow(sqlstm); // get mel_inventory rec by iatg
-	//alert(sqlstm + " :: " + r);
-	if(r == null)
-	{
-		guihand.showMessageBox("ERR: Cannot get record, either invalid asset-tag or wrong CSGN or already in a different audit-form..");
-		return;	
-	}
 
 	ArrayList kabom = new ArrayList();
 	kabom.add("999"); // Row count

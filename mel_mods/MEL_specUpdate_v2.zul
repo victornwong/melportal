@@ -18,7 +18,7 @@
 <zscript>
 <![CDATA[
 MYTITLE = "MEL - Audit / Specs Update";
-MYVERSION = "v0.3.5";
+MYVERSION = "v0.3.6";
 MYPANEL = "melitmspecupdpanl";
 /**
  * Inventory items spec update - like in FOCUS (for MEL project)
@@ -36,6 +36,7 @@ MYPANEL = "melitmspecupdpanl";
  * 28/09/2015: only Harvin can press the upload t.grn and post-spec button
  * 06/10/2015: harvin req to put portal username into t.grn receivedbyyh and shipment-code into newshipmentcodeyh
  * 12/10/2015: modif MEL_specUpdate_funcs.exportMELAuditForm() to get items by audit-id and parent-csgn ONLY
+ * 07/01/2016: remove checks for MEL-CSGN in listing audit-items - MEL_specUpdate_LB.zs -> showMEL_audititems()
  */
 import java.util.*;
 import java.text.*;
@@ -349,7 +350,8 @@ class itmdoubleclik implements org.zkoss.zk.ui.event.EventListener
 	{
 		isel = event.getTarget();
 		ifnd = lbhand.getListcellItemLabel(isel,1);
-		ityp = lbhand.getListcellItemLabel(isel,2);
+		//ityp = lbhand.getListcellItemLabel(isel,2);
+		ityp = "NB";
 		sumbatStockName(ifnd,ityp);
 		checkstock_pop.close();
 	}
