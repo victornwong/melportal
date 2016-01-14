@@ -117,7 +117,7 @@ String updateInventory_AuditItems()
 				// for RWMS, need this for EOL equips
 				"insert into ibals (code,date_,dep,qiss,qrec,val,qty2) " +
 				"values (@_masterid," + tdate + ",0,0,0,0,0); " +
-				"update mr001 set name='" + itm + "',code='" + snm + "' where code2='" + atg + "';" +
+				"update mr001 set name='" + atg + "',code='" + snm + "' where code2='" + atg + "';" +
 				"end;";
 
 				ret_assettags += "'" + atg + "',";
@@ -261,7 +261,9 @@ String inject_FC6GRN(String iasset_tags)
 
 	mainsqlstm = "declare @dmaxid int; declare @imaxid int; ";
 
-	grn_account_inject = (TESTING_MODE) ? GRN_ACCOUNT_NO : "3647"; // 0J0=2509, 0J1=3647 for "MACQUARIE EQUIPMENT LEASING - AP"
+	// 0J0=2509, 0J1=3647 for "MACQUARIE EQUIPMENT LEASING - AP"
+	// 12/01/2016: change 0J1=2509 on MACQUARIE EQUIPMENT LEASING - AP"
+	grn_account_inject = (TESTING_MODE) ? GRN_ACCOUNT_NO : "2509";
 
 	for(d : rx)
 	{

@@ -487,17 +487,20 @@ void MELaudit_func(String itype)
 
 			atgs = updateInventory_AuditItems();
 
+		//alert(atgs); return;
+		//postSpecs_LB(); return;
+
 			if(!atgs.equals("")) // got some asset-tags returned for further processing
 			{
 				if(postSpecs_LB()) // post-specs and if ok, insert tempGRN
 				{
 					vno = inject_FC6GRN(atgs);
 
-					melgrnrec = getMELGRN_rec();
+					melgrnrec = getMELGRN_rec(vno); // TODO : check batch-number retrieval
 					btchno = "MEL SHIPMENT"; // default incase of null-value
 					try { btchno = melgrnrec.get("batch_no"); } catch (Exception e) {}
 
-					fsql = "update " + GRN_EXTRAHEADEROFF + " set receivedbyyh='" + unm + "', shipmencodeyh='" + btchno + "' where extraid=" +
+					fsql = "update " + GRN_EXTRAHEADEROFF + " set receivedbyyh='" + unm + "', shipmentcodeyh='" + btchno + "' where extraid=" +
 					"(select top 1 extraheaderoff from data d where d.vouchertype=" + GRN_VOUCHERTYPE + " and d.voucherno='" + vno + "');";
 
 					sqlhand.rws_gpSqlExecuter(fsql);
