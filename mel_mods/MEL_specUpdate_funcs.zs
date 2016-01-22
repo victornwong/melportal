@@ -481,7 +481,7 @@ void exportMELAuditForm(String iwhat, int itype, String iparentcsgn)
 
 		// 08/01/2016: This 3 defs used to check and trim same string to 1 word - req by Nisha
 		OPERABILITY_DEFAULT = "TESTED_OK";
-		APPEARANCE_DEFAULT = "GOOD";
+		APPEARANCE_DEFAULT = "EXCELLENT_CONDITION";
 		COMPLETENESS_DEFAULT = "COMPLETE";
 
 		for(i=0; i<meladtfields.length; i++)
