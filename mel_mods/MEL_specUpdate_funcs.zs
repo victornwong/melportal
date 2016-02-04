@@ -468,7 +468,9 @@ void exportMELAuditForm(String iwhat, int itype, String iparentcsgn)
 
 		if(!pbitm.equals("")) // dig market-price only if name got
 		{
-			digsql = "select top 1 price from rw_mktpricebook where category='MEL' and itemname='" + pbitm + "';";
+			// 04/02/2016: additional checks for rw_mktpricebook.eqtype to mel_inventory.item_type
+			digsql = "select top 1 price from rw_mktpricebook where category='MEL' and " +
+			"itemname='" + pbitm + "' and eqtype='M' + '" + kiboo.checkNullString(d.get("item_type")) + "';";
 			mpr = sqlhand.gpSqlFirstRow(digsql);
 			if(mpr != null) // found something - insert into worksheet
 			{

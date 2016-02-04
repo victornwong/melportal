@@ -806,7 +806,9 @@ if(sechand.allowedUser(useraccessobj.username,"MEL_RW_COORD_USERS"))
 	rwcoord_menu.setVisible(true);
 }
 
-if(useraccessobj.username.equals("harvin")) // 28/09/2015: only harvin can press the upload t.grn
+// 28/09/2015: only harvin can press the upload t.grn
+// 04/02/2016: harvin request to allow thaanes to upload t.grn
+if(useraccessobj.username.equals("harvin") || useraccessobj.username.equals("thaanes"))
 {
 	uploadtempgrn_b.setVisible(true);
 }
