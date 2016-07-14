@@ -312,7 +312,7 @@ void drawAudit_MPF_things()
 			}
 			else
 			{
-				ngfun.gpMakeTextbox(nrw, mcid[i], "", k9, "95%", textboxnulldrop);
+				ngfun.gpMakeTextbox(nrw, mcid[i], "NA", k9, "95%", textboxnulldrop);
 			}
 
 			ngfun.gpMakeButton(nrw, mbtn[i], "Upd", k9, mpfbuttoncliker);
@@ -331,7 +331,7 @@ void drawAudit_MPF_things()
 			}
 			else
 			{
-				ngfun.gpMakeTextbox(melnrw, melcid[i], "", k9, "95%", textboxnulldrop);
+				ngfun.gpMakeTextbox(melnrw, melcid[i], "NA", k9, "95%", textboxnulldrop);
 			}
 			ngfun.gpMakeButton(melnrw, melbtn[i], "Upd", k9, mpfbuttoncliker);
 		} catch (ArrayIndexOutOfBoundsException e) {}
@@ -340,4 +340,3 @@ void drawAudit_MPF_things()
 	igrd.setParent(rw_mpfgridy);
 	meligrd.setParent(mel_mpfgridy);
 }
-

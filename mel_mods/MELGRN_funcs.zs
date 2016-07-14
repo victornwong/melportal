@@ -45,7 +45,8 @@ void populate_MELCSGN(Listbox ilb)
 		kk[i].setParent(null);
 	}
 
-	sqlstm = "select distinct csgn,origid from mel_csgn where rwlocation='" + user_location + "' and csgn<>'UNDEF' and mstatus='COMMIT';";
+	//sqlstm = "select distinct csgn,origid from mel_csgn where rwlocation='" + user_location + "' and csgn<>'UNDEF' and mstatus='COMMIT';";
+	sqlstm = "select distinct csgn,origid from mel_csgn where csgn<>'UNDEF' and mstatus='COMMIT';"; // 17/02/2016: show all consignment, no check on location
 	rcs = sqlhand.gpSqlGetRows(sqlstm);
 	if(rcs.size() == 0) return;
 	String[] sta = new String[2];

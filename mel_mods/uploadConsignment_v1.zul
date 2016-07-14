@@ -14,7 +14,7 @@
 <zscript>
 <![CDATA[
 MYTITLE = "MEL - Consignment Note Management";
-MYVERSION = "v0.1.3";
+MYVERSION = "v0.1.4";
 MYPANEL = "meluplcsgnpanel";
 
 /**
@@ -28,6 +28,8 @@ MYPANEL = "meluplcsgnpanel";
  * 14/08/2015: add MEL inventory item popup-editor, user can change serial-no, mel-asset, proc-type, proc-speed - req by Nisha
  * 17/08/2015: export raw Excel temporary pricing by proc-spec/speed set by coordinator
  * 28/09/2015: nisha req , summary of consignment/batch qty, received qty, unknown qty
+ * 22/02/2016: nisha req, add herself and other MEL contacts into duplicate-sn-email notification. Refer to DUPLICATES_EMAIL_NOTIFICATION
+ * 14/07/2016: req by Nisha, re-send notif-email when csgn being updated
  */
 import java.util.*;
 import java.text.*;
@@ -53,6 +55,8 @@ gridhand = new GridHandler(); ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 TESTING_MODE = false;
 MEL_CSGN_PREFIX = "MEL";
 
+DUPLICATES_EMAIL_NOTIFICATION = "Christine.Ng@macquarie.com,Malany.Mahasewan@macquarie.com,laikw@rentwise.com,Nisha@rentwise.com,Jocelyn.Loh@macquarie.com";
+
 Object csgn_upload_data = null;
 csgn_sel_item = glob_sel_inventory_obj = null;
 last_list_csgn = 0;
@@ -71,7 +75,8 @@ void doFunc(String itype)
 	lui = "MEL_" + glob_sel_loca;
 	unm = useraccessobj.username;
 	sqlstm = msgtext = "";
-	refresh = false;
+	refresh = sendnotifflag = false;
+	notifflag_type = 0;
 
 	if(itype.equals("newcsgn_b"))
 	{
@@ -88,6 +93,7 @@ void doFunc(String itype)
 		shpmeta = kiboo.getDateFromDatebox(m_shipmenteta);
 		sqlstm = "update mel_csgn set csgn='" + csn + "', extranotes='" + etn + "', shipmenteta='" + shpmeta + "' where origid=" + glob_sel_csgn;
 		m_csgn.setValue(""); m_extranotes.setValue("");
+		sendnotifflag = true; notifflag_type = 9;
 	}
 
 	if(itype.equals("savelist_b"))
@@ -189,6 +195,11 @@ void doFunc(String itype)
 	{
 		sqlhand.gpSqlExecuter(sqlstm);
 		loadCSGN(last_list_csgn);
+	}
+
+	if(sendnotifflag)
+	{
+		sendCsgn_Notif(notifflag_type,glob_sel_csgn); // 14/07/2016: req by Nisha, re-send notif-email when csgn being updated
 	}
 
 	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);

@@ -421,6 +421,11 @@ void reallySaveMEL_equiplist()
 	guihand.showMessageBox("Equipments list saved into consignment: " + glob_sel_csgn);
 }
 
+/**
+ * 14/07/2016: req by Nisha, re-send notif-email when csgn being updated
+ * @param itype [description]
+ * @param icsgn [description]
+ */
 void sendCsgn_Notif(int itype, String icsgn)
 {
 	r = getMELCSGN_rec(icsgn);
@@ -452,6 +457,10 @@ void sendCsgn_Notif(int itype, String icsgn)
 		case 8: // 28/09/2015: req nisha - qty recv summary
 			extranotes = "Items received summary";
 			break;
+
+		case 9: // 14/07/2016: req by Nisha, re-send notif-email when csgn being updated
+			extranotes = "Consignment note updates";
+			break;
 	}
 
 	emsg =
@@ -472,6 +481,7 @@ void sendCsgn_Notif(int itype, String icsgn)
 
 	switch(itype)
 	{
+		case 9: // 14/07/2016: req by Nisha, re-send notif-email when csgn being updated
 		case 1: // csgn commit notif
 			subj = "[COMMITTED] MEL Consignment-note: " + icsgn + " (ETA:" + shipeta + ")";
 			topeople += "," + partn;
@@ -520,7 +530,7 @@ void sendCsgn_Notif(int itype, String icsgn)
 
 		case 7: // 13/08/2015: req nisha, send notif if dups found in consignment upload
 			subj = "[DUPLICATES FOUND] MEL Consignment-note: " + icsgn;
-			topeople = "victor@rentwise.com,laikw@rentwise.com"; // TODO need to remove this later
+			topeople = DUPLICATES_EMAIL_NOTIFICATION;
 			dups_text = (r.get("dups_text") != null) ? sqlhand.clobToString(r.get("dups_text")) : "";
 			emsg += "\n\nDuplicates:\n" + dups_text;
 			break;

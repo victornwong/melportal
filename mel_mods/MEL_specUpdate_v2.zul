@@ -37,6 +37,7 @@ MYPANEL = "melitmspecupdpanl";
  * 06/10/2015: harvin req to put portal username into t.grn receivedbyyh and shipment-code into newshipmentcodeyh
  * 12/10/2015: modif MEL_specUpdate_funcs.exportMELAuditForm() to get items by audit-id and parent-csgn ONLY
  * 07/01/2016: remove checks for MEL-CSGN in listing audit-items - MEL_specUpdate_LB.zs -> showMEL_audititems()
+ * 04/04/2016: Change "Fill me" to "NA" requested by Nisha. Tag item-type into equipment record from product-search-listbox
  */
 import java.util.*;
 import java.text.*;
@@ -350,8 +351,7 @@ class itmdoubleclik implements org.zkoss.zk.ui.event.EventListener
 	{
 		isel = event.getTarget();
 		ifnd = lbhand.getListcellItemLabel(isel,1);
-		//ityp = lbhand.getListcellItemLabel(isel,2);
-		ityp = "NB";
+		ityp = lbhand.getListcellItemLabel(isel,2);
 		sumbatStockName(ifnd,ityp);
 		checkstock_pop.close();
 	}
@@ -808,7 +808,8 @@ if(sechand.allowedUser(useraccessobj.username,"MEL_RW_COORD_USERS"))
 
 // 28/09/2015: only harvin can press the upload t.grn
 // 04/02/2016: harvin request to allow thaanes to upload t.grn
-if(useraccessobj.username.equals("harvin") || useraccessobj.username.equals("thaanes"))
+// 21/04/2016: set only Vimalan to be able to upload t.grn
+if(useraccessobj.username.equals("vimalan"))
 {
 	uploadtempgrn_b.setVisible(true);
 }

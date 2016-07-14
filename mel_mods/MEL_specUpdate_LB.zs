@@ -177,7 +177,8 @@ void showCSGNlist(String ilocation)
 	};
 	Listbox newlb = lbhand.makeVWListbox_Width(melcsgn_holder, csgnhds, "melcsgn_lb", 3);
 
-	sqlstm = "select origid,csgn from mel_csgn where rwlocation='" + ilocation + "' and mstatus='COMMIT';";
+	// 18/02/2016: remove : rwlocation='" + ilocation + "' and 
+	sqlstm = "select origid,csgn from mel_csgn where mstatus='COMMIT';";
 	rcs = sqlhand.gpSqlGetRows(sqlstm);
 	if(rcs.size() == 0) return;
 	newlb.setRows(10);
@@ -288,7 +289,7 @@ void addAsset_ToMELADT(String iatg, String icsgn)
 
 	if(iatg.equals("")) return;
 
-	if(lbhand.ExistInListbox(audititems_lb,iatg,0)) // check exist atg in LB
+	if(lbhand.ExistInListbox(audititems_lb,iatg,1)) // check exist atg in LB
 	{
 		guihand.showMessageBox("ERR: Asset-tag already in the list..");
 		return;

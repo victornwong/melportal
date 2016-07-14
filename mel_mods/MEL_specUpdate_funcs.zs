@@ -337,20 +337,19 @@ void showCheckstock_win(Div idiv) // knockoff from jobsheet_funcs.zs but modifie
 	{
 		new listboxHeaderWidthObj("No.",true,"40px"),
 		new listboxHeaderWidthObj("Items found",true,""),
-		//new listboxHeaderWidthObj("Type",true,"40px"),
+		new listboxHeaderWidthObj("Type",true,"40px"),
 	};
-	String[] fl_t1 = { "name" }; // , "item" 
+	String[] fl_t1 = { "name","itemtypeyh" }; // , "item" 
 
 	kn = kiboo.replaceSingleQuotes( chkstkname_tb.getValue().trim() );
 	if(kn.equals("")) return;
 
 	Listbox newlb = lbhand.makeVWListbox_Width(idiv, cstkhds1, "chkstock_lb", 3);
 
-	/*
-		csqlstm = "select distinct name,item from partsall_0 " +
-		"where name like '%" + kn + "%' group by name,item order by item,name";
-	*/
-	csqlstm = "select distinct name from mr008 where name like '%" + kn + "%' order by name"; // 23/12/2015: use mr008 product-name instead from partsall_0
+	// 04/04/2016: get product-name and product type(DT,MT..) to be used to auto populate the entry box
+	csqlstm = "select distinct top 30 m.name, u.itemtypeyh from mr008 m left join u0001 u on u.productnameyh = m.masterid " +
+	"where m.name like '%" + kn + "%' order by m.name;";
+
 	r = sqlhand.rws_gpSqlGetRows(csqlstm);
 	if(r.size() == 0) return;
 	newlb.setMold("paging"); newlb.setRows(20);
@@ -478,7 +477,7 @@ void exportMELAuditForm(String iwhat, int itype, String iparentcsgn)
 				mktpriceval = Float.parseFloat(mktprice);
 			}
 		}
-		//alert("here: " + d);
+		//debugbox.setValue(debugbox.getValue() + "\n" + mktpriceval.toString() );
 		//if(d.get("serial_no").equals("CNT20440H8")) alert("data: " + d);
 
 		// 08/01/2016: This 3 defs used to check and trim same string to 1 word - req by Nisha
@@ -500,7 +499,7 @@ void exportMELAuditForm(String iwhat, int itype, String iparentcsgn)
 				{
 					dv = 0.0;
 					try { dv = Float.parseFloat(dvr.get("value1")); } catch (Exception e) { if(dvr.get("value1").equals("WU")) dv = mktpriceval; }
-					condition_txt += katu + " : " + nf2.format(dv) + " "; // dvr.get("value1") + ", ";
+					condition_txt += katu + " : " + nf2.format(dv) + ", "; // dvr.get("value1") + ", ";
 					totaldiminish += dv;
 
 					if(DEBUG_OUTPUT) debugbox.setValue(condition_txt + " : " + dv.toString() + "\n" + debugbox.getValue());
@@ -518,7 +517,7 @@ void exportMELAuditForm(String iwhat, int itype, String iparentcsgn)
 						{
 							dv = 0.0;
 							try { dv = Float.parseFloat(dvr.get("value1")); } catch (Exception e) { if(dvr.get("value1").equals("WU")) dv = mktpriceval; }
-							condition_txt += ck + " : " + nf2.format(dv) + " "; // dvr.get("value1") + ", ";
+							condition_txt += ck + " : " + nf2.format(dv) + ", "; // dvr.get("value1") + ", ";
 							totaldiminish += dv;
 
 							if(DEBUG_OUTPUT) debugbox.setValue(condition_txt + " : " + dv.toString() + "\n" + debugbox.getValue());
@@ -536,7 +535,7 @@ void exportMELAuditForm(String iwhat, int itype, String iparentcsgn)
 				{
 					dv = 0.0;
 					try { dv = Float.parseFloat(dvr.get("value1")); } catch (Exception e) { if(dvr.get("value1").equals("WU")) dv = mktpriceval; }
-					condition_txt += katu + " : " + nf2.format(dv) + " "; //dvr.get("value1") + ", ";
+					condition_txt += katu + " : " + nf2.format(dv) + ", "; //dvr.get("value1") + ", ";
 					totaldiminish += dv;
 
 					if(DEBUG_OUTPUT) debugbox.setValue(condition_txt + " : " + dv.toString() + "\n" + debugbox.getValue());
@@ -554,7 +553,7 @@ void exportMELAuditForm(String iwhat, int itype, String iparentcsgn)
 						{
 							dv = 0.0;
 							try { dv = Float.parseFloat(dvr.get("value1")); } catch (Exception e) { if(dvr.get("value1").equals("WU")) dv = mktpriceval; }
-							condition_txt += ck + " : " + nf2.format(dv) + " "; // dvr.get("value1") + ", ";
+							condition_txt += ck + " : " + nf2.format(dv) + ", "; // dvr.get("value1") + ", ";
 							totaldiminish += dv;
 
 							if(DEBUG_OUTPUT) debugbox.setValue(condition_txt + " : " + dv.toString() + "\n" + debugbox.getValue());
@@ -572,7 +571,7 @@ void exportMELAuditForm(String iwhat, int itype, String iparentcsgn)
 				{
 					dv = 0.0;
 					try { dv = Float.parseFloat(dvr.get("value1")); } catch (Exception e) { if(dvr.get("value1").equals("WU")) dv = mktpriceval; }
-					condition_txt += katu + " : " + nf2.format(dv) + " "; // dvr.get("value1") + ", ";
+					condition_txt += katu + " : " + nf2.format(dv) + ", "; // dvr.get("value1") + ", ";
 					totaldiminish += dv;
 
 					if(DEBUG_OUTPUT) debugbox.setValue(condition_txt + " : " + dv.toString() + "\n" + debugbox.getValue());
@@ -590,7 +589,7 @@ void exportMELAuditForm(String iwhat, int itype, String iparentcsgn)
 						{
 							dv = 0.0;
 							try { dv = Float.parseFloat(dvr.get("value1")); } catch (Exception e) { if(dvr.get("value1").equals("WU")) dv = mktpriceval; }
-							condition_txt += ck + " : " + nf2.format(dv) + " "; // dvr.get("value1") + ", ";
+							condition_txt += ck + " : " + nf2.format(dv) + ", "; // dvr.get("value1") + ", ";
 							totaldiminish += dv;
 
 							if(DEBUG_OUTPUT) debugbox.setValue(condition_txt + " : " + dv.toString() + "\n" + debugbox.getValue());
