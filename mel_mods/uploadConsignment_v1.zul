@@ -55,7 +55,7 @@ gridhand = new GridHandler(); ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 TESTING_MODE = false;
 MEL_CSGN_PREFIX = "MEL";
 
-DUPLICATES_EMAIL_NOTIFICATION = "Christine.Ng@macquarie.com,Malany.Mahasewan@macquarie.com,laikw@rentwise.com,Nisha@rentwise.com,Jocelyn.Loh@macquarie.com";
+DUPLICATES_EMAIL_NOTIFICATION = "Christine.Ng@macquarie.com,Malany.Mahasewan@macquarie.com,laikw@rentwise.com,Nisha@rentwise.com,Jocelyn.Loh@macquarie.com,nuraqilah@rentwise.com";
 
 Object csgn_upload_data = null;
 csgn_sel_item = glob_sel_inventory_obj = null;
